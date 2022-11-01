@@ -47,12 +47,18 @@ function main() {
     .${openIconName}:hover {
       opacity: 0.9;
     }
+
+    .tag {
+      border: 1px dotted purple;
+      border-radius: 12px;
+      padding-x: 4px;
+    }
   `);
 
   logseq.App.registerUIItem("toolbar", {
     key: openIconName,
     template: `
-      <div data-on-click="show" class="${openIconName}">⚙️</div>
+      <div data-on-click="show" class="${openIconName}">⚙️ Bygonz</div>
     `,
   });
 }

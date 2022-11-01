@@ -16,6 +16,10 @@ function App() {
       >
         <div ref={innerRef} className="text-size-2em">
           Welcome to [[Logseq]] Plugins!
+          <br />
+          <br />
+          <a className="cursor-pointer text-blue" onClick={()=>logseq.App.relaunch()}>Refresh</a>
+       
         </div>
       </main>
     );
