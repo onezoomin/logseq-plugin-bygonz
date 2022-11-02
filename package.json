@@ -1,6 +1,6 @@
 {
   "name": "bygonz-logseq",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "main": "dist/index.html",
   "scripts": {
     "dev": "vite",
@@ -10,8 +10,10 @@
   "license": "MIT",
   "dependencies": {
     "@logseq/libs": "^0.0.10",
+    "bygonz": "link:../ztax/src/bygonz",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "ts-mixer": "^6.0.1"
   },
   "devDependencies": {
     "@semantic-release/changelog": "6.0.1",

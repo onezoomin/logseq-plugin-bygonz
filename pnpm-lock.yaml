@@ -13,6 +13,7 @@ specifiers:
   '@typescript-eslint/parser': 5.42.0
   '@vitejs/plugin-react': 2.2.0
   autoprefixer: 10.4.13
+  bygonz: link:../ztax/src/bygonz
   conventional-changelog-conventionalcommits: 5.0.0
   eslint: 8.26.0
   eslint-plugin-react: 7.31.10
@@ -22,14 +23,17 @@ specifiers:
   react-dom: ^18.2.0
   semantic-release: 19.0.5
   tailwindcss: 3.2.1
+  ts-mixer: ^6.0.1
   typescript: 4.8.4
   vite: 3.2.2
   vite-plugin-logseq: 1.1.2
 
 dependencies:
   '@logseq/libs': 0.0.10
+  bygonz: link:../ztax/src/bygonz
   react: 18.2.0
   react-dom: 18.2.0_react@18.2.0
+  ts-mixer: 6.0.1
 
 devDependencies:
   '@semantic-release/changelog': 6.0.1_semantic-release@19.0.5
@@ -4082,6 +4086,10 @@ packages:
     resolution: {integrity: sha512-c1PTsA3tYrIsLGkJkzHF+w9F2EyxfXGo4UyJc4pFL++FMjnq0HJS69T3M7d//gKrFKwy429bouPescbjecU+Zw==}
     engines: {node: '>=8'}
     dev: true
+
+  /ts-mixer/6.0.1:
+    resolution: {integrity: sha512-hvE+ZYXuINrx6Ei6D6hz+PTim0Uf++dYbK9FFifLNwQj+RwKquhQpn868yZsCtJYiclZF1u8l6WZxxKi+vv7Rg==}
+    dev: false
 
   /tslib/1.14.1:
     resolution: {integrity: sha512-Xni35NKzjgMrwevysHTCArtLDpPvye8zV/0E4EyYn43P7/7qvQwPh9BGkHewbMulVntbigmcT7rdX3BNo9wRJg==}

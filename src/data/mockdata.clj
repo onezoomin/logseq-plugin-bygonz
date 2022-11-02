@@ -10,24 +10,27 @@
  :block/unordered true, 
  :block/page {:db/id 19}}
 
-
 {:block/properties-text-values
- {:id "6361919b-0e19-4d1e-aa70-6aadbc4243a1"},
+ {:id "6361919b-0e19-4d1e-aa70-6aadbc4243a1",
+  :propnum "1",
+  :propfu "bar"},
  :block/uuid #uuid "6361919b-0e19-4d1e-aa70-6aadbc4243a1",
- :block/properties {:id "6361919b-0e19-4d1e-aa70-6aadbc4243a1"},
+ :block/properties
+ {:id "6361919b-0e19-4d1e-aa70-6aadbc4243a1",
+  :propnum 1,
+  :propfu "bar"},
  :block/journal? true,
  :block/left {:db/id 323},
- :block/refs [{:db/id 334}],
- :block/properties-order (:id),
+ :block/refs [{:db/id 334} {:db/id 359} {:db/id 362}],
+ :block/properties-order (:id :propnum :propfu),
  :block/format :markdown,
  :block/content
- "Item 1 #tagged \nid:: 6361919b-0e19-4d1e-aa70-6aadbc4243a1\nwill be referenced by item 3",
+ "Item 1 #tagged \nid:: 6361919b-0e19-4d1e-aa70-6aadbc4243a1\npropnum::  1\npropfu:: bar\nwill be referenced by item 3",
  :db/id 324,
- :block/path-refs [{:db/id 19} {:db/id 334}],
+ :block/path-refs [{:db/id 19} {:db/id 334} {:db/id 359} {:db/id 362}],
  :block/parent {:db/id 323},
  :block/unordered true, 
  :block/page {:db/id 19}}
-
 
 {:block/uuid #uuid "636191b3-a339-4346-9d50-89b4b10550ed",
  :block/properties {},
@@ -55,3 +58,40 @@
  :block/parent {:db/id 323},
  :block/unordered true, 
  :block/page {:db/id 19}}
+
+;; as json from logseq.Editor.getCurrentBlock()
+{
+    "unordered": true,
+    "parent": {
+        "id": 19
+    },
+    "children": [
+        [
+            "uuid",
+            null
+        ],
+        [
+            "uuid",
+            null
+        ],
+        [
+            "uuid",
+            null
+        ]
+    ],
+    "id": 539,
+    "pathRefs": [
+        {
+            "id": 19
+        }
+    ],
+    "uuid": "6362c03c-fd5f-49e5-af3e-7459a1f09b33",
+    "content": "Basic Mock Tree for Sync",
+    "page": {
+        "id": 19
+    },
+    "left": {
+        "id": 538
+    },
+    "format": "markdown"
+}
