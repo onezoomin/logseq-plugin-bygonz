@@ -1,6 +1,4 @@
 import React, { useRef } from "react";
-import { getInitializedBlocksDB } from "./data/bygonz";
-import { BlockParams } from "./data/LogSeqBlock";
 import { useAppVisible } from "./utils";
 
 
@@ -9,27 +7,7 @@ function App() {
   const innerRef = useRef<HTMLDivElement>(null);
   const visible = useAppVisible();
   if (visible) {
-    (async () => {
-      const blocksDB = await getInitializedBlocksDB()
-      const currentBlock = await logseq.Editor.getCurrentBlock()
-
-      if (currentBlock) {
-        const currentBlockWithKids = await logseq.Editor.getBlock(currentBlock?.uuid, { includeChildren: true })
-        console.log({ currentBlockWithKids })
-        let currentBlockByg = await blocksDB.Blocks.get(currentBlock.uuid)
-        if (!currentBlockByg) {
-          const mappedBlockObj: Partial<BlockParams> = { ID: currentBlock.uuid, ':db/id': currentBlock.id }
-          for (const eachKey of Object.keys(currentBlock)) {
-            if (eachKey === 'children') continue
-            mappedBlockObj[`:block/${eachKey}`] = currentBlock[eachKey]
-          }
-          blocksDB.Blocks.add(mappedBlockObj)
-        }
-        console.log({ currentBlockByg })
-
-      }
-
-    })()
+    
 
 
     return (
