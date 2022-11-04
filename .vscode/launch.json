@@ -1,0 +1,21 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Frontend in Chrome",
+            "request": "launch",
+            "type": "pwa-chrome",
+            "url": "http://localhost:7000/apps/color-schemes/index.dev.html",
+            "webRoot": "${workspaceFolder}",
+            "userDataDir": "${env:HOME}/.vscode/chrome-data",
+            "runtimeArgs": [
+                // "--custom-devtools-frontend=file://${env:HOME}/.vscode/devtools-frontend/out/default/gen/front_end"
+                "--custom-devtools-frontend=file://${env:HOME}/dev/stuff/devtools-frontend/out/fast-build/gen/front_end"
+            ],
+            "timeout": 20000
+        },
+    ]
+}

@@ -1,0 +1,33 @@
+# https://taskfile.dev
+
+version: '3'
+
+tasks:
+  default:
+    cmds:
+      - task: setup
+
+  setup:
+    cmds:
+      - cmd: echo -e "Setting up dev environment...\n"
+        silent: true
+      - cmd: test -n "$DIRENV_DIR" || echo -e "Direnv not loaded! Install dependencies yourself or run 'direnv allow'.\n"
+        silent: true
+      - task: setup-npm
+      - cmd: echo -e "\nYou're all set. Run 'task dev' to start dev server"
+        silent: true
+  setup-npm:
+    cmds:
+      - pnpm i
+    sources:
+      - pnpm-lock.yaml
+
+  dev:
+    deps: [setup-npm]
+    cmds:
+      - pnpm run dev
+
+  build:
+    deps: [setup-npm]
+    cmds:
+      - pnpm run build

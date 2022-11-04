@@ -1,0 +1,14 @@
+{
+    "autoimport.filesToScan": "**/*.{mjs,wjs,js,jsx,ts,tsx,less,css}",
+    "autoimport.useSemiColon": false,
+    "editor.snippetSuggestions": "top",
+    "editor.codeActionsOnSave": [
+        "source.fixAll",
+    ],
+    "search.exclude": {
+        "dist": true
+    },
+    "task.allowAutomaticTasks": "on",
+    "editor.formatOnSave": false,
+    "vite.autoStart": false
+}
