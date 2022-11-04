@@ -33,6 +33,7 @@ export interface BlockParams {
   isDeleted?: boolean
   ':db/id': number
   ':block/content': string
+  ':block/uuid': string
   ':block/journal'?: boolean
   ':block/unordered'?: boolean
   ':block/left'?: any
@@ -51,6 +52,7 @@ export class Block extends Mixin(TimeStampedBase, ModWho) {
   isDeleted?: boolean
   ':db/id': number
   ':block/content': string
+  ':block/uuid': string
   ':block/journal'?: boolean
   ':block/unordered'?: boolean
   ':block/left'?: any

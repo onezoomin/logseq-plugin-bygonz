@@ -12,6 +12,8 @@ import { SettingSchemaDesc } from '@logseq/libs/dist/LSPlugin'
 import { getInitializedBlocksDB } from "./data/bygonz";
 import { BlockParams } from "./data/LogSeqBlock";
 
+import { detailedDiff } from 'deep-object-diff';
+
 const settings: SettingSchemaDesc[] = [
   {
     title: "Bygonz Sync Interval",
@@ -85,26 +87,44 @@ function main() {
       await logseq.Editor.updateBlock(blockUuid, newContent)
       renderTimer({ pomoId, slotId, startTime })
     },
-    async bygonzSync () {
+    async bygonzSync ({
+      pomoId, slotId,
+      startTime, durationMins,
+    }: any) {
       const blocksDB = await getInitializedBlocksDB()
       const currentBlock = await logseq.Editor.getCurrentBlock()
-  
       if (currentBlock) {
+        const ID = currentBlock.uuid
         const currentBlockWithKids = await logseq.Editor.getBlock(currentBlock?.uuid, { includeChildren: true })
         console.log({ currentBlockWithKids })
-        let currentBlockByg = await blocksDB.Blocks.get(currentBlock.uuid)
-        if (!currentBlockByg) {
-          const mappedBlockObj: Partial<BlockParams> = { ID: currentBlock.uuid, ':db/id': currentBlock.id }
-          for (const eachKey of Object.keys(currentBlock)) {
-            if (eachKey === 'children') continue
-            mappedBlockObj[`:block/${eachKey}`] = currentBlock[eachKey]
-          }
-          blocksDB.Blocks.add(mappedBlockObj)
+        const currentBlockByg = await blocksDB.Blocks.get(ID)
+        const mappedBlockObj: Partial<BlockParams> = { ID, ':db/id': currentBlock.id }
+        for (const eachKey of Object.keys(currentBlock)) {
+          if (eachKey === 'children') continue
+          mappedBlockObj[`:block/${eachKey}`] = currentBlock[eachKey]
         }
-        console.log({ currentBlockByg })
-  
+        if (!currentBlockByg) {
+          blocksDB.Blocks.add(mappedBlockObj)
+          console.log('adding', { mappedBlockObj })
+        } else {
+          const diff = detailedDiff(currentBlockByg as object, mappedBlockObj as object)
+          console.log({ currentBlockByg, diff })
+          const updateObj = {...diff.added, ...diff.updated}
+          if(Object.keys(updateObj).length) {
+          console.log('updating with', { updateObj })
+
+            blocksDB.Blocks.update(ID, updateObj)
+          }
+        }
+
+        
       }
-  
+      logseq.provideUI({
+        key: pomoId,
+        slot: slotId,
+        reset: true,
+        template: `<a class="pomodoro-timer-btn ${currentBlock ? 'known-block':'unknown-block'}"> - bygonz ${currentBlock ? ' ✅':'🍅'} -</a>`,
+      })
     }
   })
 
@@ -132,7 +152,7 @@ function main() {
     if (!type?.startsWith(':bygonz_')) return
     const identity = type.split('_')[1]?.trim()
     if (!identity) return
-    const pomoId = 'pomodoro-timer-start_' + identity
+    const pomoId = 'bygonz_' + identity
     if (!startTime?.trim()) {
       return logseq.provideUI({
         key: pomoId,
@@ -141,7 +161,7 @@ function main() {
           <button
           class="pomodoro-timer-btn is-start"
           data-slot-id="${slot}" 
-          data-pomo-id="${identity}"
+          data-pomo-id="${pomoId}"
           data-block-uuid="${payload.uuid}"
           data-on-click="bygonzSync">
           > bygonz <
