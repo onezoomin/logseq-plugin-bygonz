@@ -12,7 +12,7 @@ import { getInitializedBlocksDB } from './data/bygonz'
 import { BlockParams } from './data/LogSeqBlock'
 
 import { detailedDiff } from 'deep-object-diff'
-import { initIPFS } from './data/ipfs'
+import { initIPFS, loadBlockFromIPFS } from './data/ipfs'
 
 import { Buffer } from 'buffer'
 globalThis.Buffer = Buffer
@@ -26,7 +26,6 @@ const settings: SettingSchemaDesc[] = [
     description: 'Set the length of time between sync polling in seconds',
   },
 ]
-logseq.useSettingsSchema(settings)
 
 // @ts-expect-error
 const css = (t, ...args) => String.raw(t, ...args)
@@ -35,7 +34,7 @@ const pluginId = PL.id
 
 function main () {
   console.info(`#${pluginId}: MAIN`)
-  initIPFS().catch(e => console.error('IPFS init failure', e))
+  logseq.useSettingsSchema(settings)
 
   const root = ReactDOM.createRoot(document.getElementById('app')!)
 
@@ -77,6 +76,21 @@ function main () {
       padding-x: 4px;
     }
   `)
+
+  logseq.Editor.registerSlashCommand('ipfs', async (e) => {
+    const maybeCid = (await logseq.Editor.getEditingBlockContent()).trim()
+    const currentBlock = await logseq.Editor.getCurrentBlock()
+    console.log('slash command', e, { maybeCid, currentBlock })
+    if (!currentBlock) throw new Error('no current block')
+
+    // const targetBlock = await logseq.Editor.insertBlock(targetBlock.uuid, '🚀 Fetching ...', { before: true })
+    // if (!targetBlock) throw new Error('Insert result is null')
+
+    /* const blocks: IBatchBlock[] =  */await loadBlockFromIPFS(maybeCid, currentBlock)
+    // await logseq.Editor.insertBatchBlock(targetBlock.uuid, blocks, {
+    //   sibling: false,
+    // })
+  })
 
   logseq.provideModel({
     async startPomoTimer (e: any) {
@@ -181,9 +195,14 @@ function main () {
       <div data-on-click="show" class="${openIconName}">⚙️ Bygonz</div>
     `,
   })
+
+  setTimeout(() => {
+    initIPFS().catch(e => console.error('IPFS init failure', e))
+  })
 }
 
 logseq.ready(main).catch(console.error)
+
 if (!navigator.userAgent.includes('Electron')) {
   console.log('NOT electron - launching...', main)
   main()
