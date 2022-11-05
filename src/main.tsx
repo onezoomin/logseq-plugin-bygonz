@@ -1,60 +1,64 @@
-import "@logseq/libs";
+import '@logseq/libs'
 
-import React from "react";
-import * as ReactDOM from "react-dom/client";
-import App from "./App";
-import "./index.css";
+import React from 'react'
+import * as ReactDOM from 'react-dom/client'
+import App from './App'
+import './index.css'
 
-import { logseq as PL } from "../package.json";
+import { logseq as PL } from '../package.json'
 import { SettingSchemaDesc } from '@logseq/libs/dist/LSPlugin'
 
+import { getInitializedBlocksDB } from './data/bygonz'
+import { BlockParams } from './data/LogSeqBlock'
 
-import { getInitializedBlocksDB } from "./data/bygonz";
-import { BlockParams } from "./data/LogSeqBlock";
+import { detailedDiff } from 'deep-object-diff'
+import { initIPFS } from './data/ipfs'
 
-import { detailedDiff } from 'deep-object-diff';
+import { Buffer } from 'buffer'
+globalThis.Buffer = Buffer
 
 const settings: SettingSchemaDesc[] = [
   {
-    title: "Bygonz Sync Interval",
-    key: "Bygonz Sync Interval",
-    type: "number",
+    title: 'Bygonz Sync Interval',
+    key: 'Bygonz Sync Interval',
+    type: 'number',
     default: 60,
-    description: "Set the length of time between sync polling in seconds",
-  }
+    description: 'Set the length of time between sync polling in seconds',
+  },
 ]
-logseq.useSettingsSchema(settings);
-
+logseq.useSettingsSchema(settings)
 
 // @ts-expect-error
-const css = (t, ...args) => String.raw(t, ...args);
+const css = (t, ...args) => String.raw(t, ...args)
 
-const pluginId = PL.id;
+const pluginId = PL.id
 
-function main() {
-  console.info(`#${pluginId}: MAIN`);
-  const root = ReactDOM.createRoot(document.getElementById("app")!);
+function main () {
+  console.info(`#${pluginId}: MAIN`)
+  initIPFS().catch(e => console.error('IPFS init failure', e))
+
+  const root = ReactDOM.createRoot(document.getElementById('app')!)
 
   root.render(
     <React.StrictMode>
       <App />
-    </React.StrictMode>
-  );
+    </React.StrictMode>,
+  )
 
-  function createModel() {
+  function createModel () {
     return {
-      show() {
-        logseq.showMainUI();
+      show () {
+        logseq.showMainUI()
       },
-    };
+    }
   }
 
-  logseq.provideModel(createModel());
+  logseq.provideModel(createModel())
   logseq.setMainUIInlineStyle({
     zIndex: 11,
-  });
+  })
 
-  const openIconName = "template-plugin-open";
+  const openIconName = 'template-plugin-open'
 
   logseq.provideStyle(css`
     .${openIconName} {
@@ -72,8 +76,8 @@ function main() {
       border-radius: 12px;
       padding-x: 4px;
     }
-  `);
-  
+  `)
+
   logseq.provideModel({
     async startPomoTimer (e: any) {
       const { pomoId, slotId, blockUuid } = e.dataset
@@ -109,63 +113,60 @@ function main() {
         } else {
           const diff = detailedDiff(currentBlockByg as object, mappedBlockObj as object)
           console.log({ currentBlockByg, diff })
-          const updateObj = {...diff.added, ...diff.updated}
-          if(Object.keys(updateObj).length) {
-          console.log('updating with', { updateObj })
+          const updateObj = { ...diff.added, ...diff.updated }
+          if (Object.keys(updateObj).length) {
+            console.log('updating with', { updateObj })
 
             blocksDB.Blocks.update(ID, updateObj)
           }
         }
-
-        
       }
       logseq.provideUI({
         key: pomoId,
         slot: slotId,
         reset: true,
-        template: `<a class="pomodoro-timer-btn ${currentBlock ? 'known-block':'unknown-block'}"> - bygonz ${currentBlock ? ' ✅':'🍅'} -</a>`,
+        template: `<a class="pomodoro-timer-btn ${currentBlock ? 'known-block' : 'unknown-block'}"> - bygonz ${currentBlock ? ' ✅' : '🍅'} -</a>`,
       })
-    }
+    },
   })
 
-  
   function renderTimer ({
-      pomoId, slotId,
-      startTime, durationMins,
-    }: any) {
+    pomoId, slotId,
+    startTime, durationMins,
+  }: any) {
     if (!startTime) return
     const durationTime = (durationMins || logseq.settings?.pomodoroTimeLength || 25) * 60 // default 20 minus
     const keepKey = `${logseq.baseInfo.id}--${pomoId}` // -${slotId}
     // const keepOrNot = () => logseq.App.queryElementById(keepKey)
-    
-    
+
     logseq.provideUI({
       key: pomoId,
       slot: slotId,
       reset: true,
-      template: `<a class="pomodoro-timer-btn is-done">🍅 ✅</a>`,
+      template: '<a class="pomodoro-timer-btn is-done">🍅 ✅</a>',
     })
   }
-  
+
   logseq.App.onMacroRendererSlotted(({ slot, payload }) => {
     const [type, startTime, durationMins] = payload.arguments
     if (!type?.startsWith(':bygonz_')) return
     const identity = type.split('_')[1]?.trim()
     if (!identity) return
-    const pomoId = 'bygonz_' + identity
+    const pomoId = `bygonz_${identity}`
     if (!startTime?.trim()) {
       return logseq.provideUI({
         key: pomoId,
-        slot, reset: true,
+        slot,
+        reset: true,
         template: `
           <button
-          class="pomodoro-timer-btn is-start"
-          data-slot-id="${slot}" 
-          data-pomo-id="${pomoId}"
-          data-block-uuid="${payload.uuid}"
-          data-on-click="bygonzSync">
-          > bygonz <
-          </button>
+            class="pomodoro-timer-btn is-start"
+            style="border: 1px dashed lightgrey; padding: 0.5rem 1rem;border-radius: 0.5rem;"
+            data-slot-id="${slot}" 
+            data-pomo-id="${pomoId}"
+            data-block-uuid="${payload.uuid}"
+            data-on-click="bygonzSync"
+          >bygonz</button>
         `,
       })
     }
@@ -174,12 +175,16 @@ function main() {
     renderTimer({ pomoId, slotId: slot, startTime, durationMins })
   })
 
-  logseq.App.registerUIItem("toolbar", {
+  logseq.App.registerUIItem('toolbar', {
     key: openIconName,
     template: `
       <div data-on-click="show" class="${openIconName}">⚙️ Bygonz</div>
     `,
-  });
+  })
 }
 
-logseq.ready(main).catch(console.error);
+logseq.ready(main).catch(console.error)
+if (!navigator.userAgent.includes('Electron')) {
+  console.log('NOT electron - launching...', main)
+  main()
+}

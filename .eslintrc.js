@@ -18,15 +18,15 @@ module.exports = {
     project: [resolve(__dirname, './tsconfig.json'), resolve(__dirname, './tsconfig.eslint.json')],
     tsconfigRootDir: __dirname,
     ecmaVersion: 2018, // Allows for the parsing of modern ECMAScript features
-    sourceType: 'module', // Allows for the use of imports
+    sourceType: 'module' // Allows for the use of imports
   },
 
   env: {
-    browser: true,
+    browser: true
   },
 
   plugins: [
-    "react-hooks",
+    'react-hooks',
   ],
 
   // Rules order is important, please avoid shuffling them
@@ -39,7 +39,7 @@ module.exports = {
     // https://github.com/typescript-eslint/typescript-eslint/tree/master/packages/eslint-plugin#usage
     // ESLint typescript rules
     // 'plugin:@typescript-eslint/eslint-recommended',
-    'plugin:@typescript-eslint/recommended',
+    'plugin:@typescript-eslint/recommended'
 
     // consider disabling this class of rules if linting takes too long
     // 'plugin:@typescript-eslint/recommended-requiring-type-checking', // DISABLED as it was mangling the last import line creating errors and making the files useless
@@ -75,7 +75,7 @@ module.exports = {
     '@typescript-eslint/comma-dangle': ['warn', 'always-multiline'],
     // 'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
 
-    "import/prefer-default-export": "off",
+    'import/prefer-default-export': 'off',
     // 'import/first': 'off',
     // 'import/named': 'error',
     // 'import/namespace': 'error',
@@ -86,8 +86,8 @@ module.exports = {
     // 'import/no-extraneous-dependencies': 'off',
     // 'prefer-promise-reject-errors': 'off',
 
-    "react-hooks/rules-of-hooks": "error",
-    "react-hooks/exhaustive-deps": "warn",
+    'react-hooks/rules-of-hooks': 'error',
+    'react-hooks/exhaustive-deps': 'warn',
 
     // TypeScript
     quotes: ['warn', 'single'],
@@ -99,8 +99,8 @@ module.exports = {
     '@typescript-eslint/ban-ts-comment': 'off',
     '@typescript-eslint/prefer-ts-expect-error': 'warn',
     '@typescript-eslint/restrict-template-expressions': 'warn',
-    "@typescript-eslint/ban-ts-comment": "off",
-    "@typescript-eslint/no-non-null-assertion": "off",
-    "@typescript-eslint/explicit-module-boundary-types": "off"
-  },
+    '@typescript-eslint/ban-ts-comment': 'off',
+    '@typescript-eslint/no-non-null-assertion': 'off',
+    '@typescript-eslint/explicit-module-boundary-types': 'off'
+  }
 }
