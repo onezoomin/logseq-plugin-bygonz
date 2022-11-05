@@ -1,0 +1,10 @@
+{
+    // extra includes for eslint
+    // -> https://github.com/typescript-eslint/typescript-eslint/blob/master/packages/parser/README.md#configuration
+    "extends": "./tsconfig.json",
+    "include": [
+        ".eslintrc.js", // top-level config files
+        "*.js", // top-level config files
+        "src/**/*.js"
+    ]
+}

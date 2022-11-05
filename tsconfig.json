@@ -14,7 +14,12 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "jsx": "react"
+    "baseUrl": ".",
+    "experimentalDecorators": true,
+    "jsx": "react",
+    "noImplicitAny": false,
+    //"strict": true,
+    "noImplicitThis": true //https://v3.vuejs.org/guide/typescript-support.html#recommended-configuration
   },
   "include": ["./src"]
 }
