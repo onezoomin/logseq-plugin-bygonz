@@ -12,7 +12,7 @@ export default defineConfig({
     reactPlugin(),
     globalPolyfill(),
     // @ts-expect-error
-    nodePolyfills({}),
+    // nodePolyfills({}),
     // { ...globals(), name: 'rollup-plugin-node-globals' },
   ],
   // Makes HMR available for development
@@ -24,6 +24,5 @@ export default defineConfig({
 
   define: {
     'process.env': {},
-    // global: {},
   },
 })

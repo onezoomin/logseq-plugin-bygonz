@@ -8,11 +8,11 @@ import './index.css'
 import { logseq as PL } from '../package.json'
 import { SettingSchemaDesc } from '@logseq/libs/dist/LSPlugin'
 
-import { getInitializedBlocksDB } from './data/bygonz'
+import { BlocksDB, getInitializedBlocksDB } from './data/bygonz'
 import { BlockParams } from './data/LogSeqBlock'
 
 import { detailedDiff } from 'deep-object-diff'
-import { initIPFS, loadBlockFromIPFS } from './data/ipfs'
+// import { initIPFS, loadBlockFromIPFS } from './data/ipfs'
 
 import { Buffer } from 'buffer'
 globalThis.Buffer = Buffer
@@ -27,10 +27,10 @@ const settings: SettingSchemaDesc[] = [
   },
 ]
 
-// @ts-expect-error
 const css = (t, ...args) => String.raw(t, ...args)
 
 const pluginId = PL.id
+let blocksDB: BlocksDB
 
 function main () {
   console.info(`#${pluginId}: MAIN`)
@@ -82,11 +82,12 @@ function main () {
     const currentBlock = await logseq.Editor.getCurrentBlock()
     console.log('slash command', e, { maybeCid, currentBlock })
     if (!currentBlock) throw new Error('no current block')
+    throw new Error('TODO')
 
     // const targetBlock = await logseq.Editor.insertBlock(targetBlock.uuid, '🚀 Fetching ...', { before: true })
     // if (!targetBlock) throw new Error('Insert result is null')
 
-    /* const blocks: IBatchBlock[] =  */await loadBlockFromIPFS(maybeCid, currentBlock)
+    // /* const blocks: IBatchBlock[] =  */await loadBlockFromIPFS(maybeCid, currentBlock)
     // await logseq.Editor.insertBatchBlock(targetBlock.uuid, blocks, {
     //   sibling: false,
     // })
@@ -109,17 +110,17 @@ function main () {
       pomoId, slotId,
       startTime, durationMins,
     }: any) {
-      const blocksDB = await getInitializedBlocksDB()
       const currentBlock = await logseq.Editor.getCurrentBlock()
       if (currentBlock) {
         const ID = currentBlock.uuid
         const currentBlockWithKids = await logseq.Editor.getBlock(currentBlock?.uuid, { includeChildren: true })
         console.log({ currentBlockWithKids })
+
         const currentBlockByg = await blocksDB.Blocks.get(ID)
         const mappedBlockObj: Partial<BlockParams> = { ID, ':db/id': currentBlock.id }
         for (const eachKey of Object.keys(currentBlock)) {
           if (eachKey === 'children') continue
-          mappedBlockObj[`:block/${eachKey}`] = currentBlock[eachKey]
+          mappedBlockObj[`:block/${eachKey}`] = currentBlock[eachKey] // HACK Does this mapping make sense?
         }
         if (!currentBlockByg) {
           blocksDB.Blocks.add(mappedBlockObj)
@@ -197,7 +198,10 @@ function main () {
   })
 
   setTimeout(() => {
-    initIPFS().catch(e => console.error('IPFS init failure', e))
+    // initIPFS().catch(e => console.error('IPFS init failure', e))
+    ((async () => {
+      blocksDB = await getInitializedBlocksDB()
+    })()).catch(e => console.error('bygonz init failure', e))
   })
 }
 

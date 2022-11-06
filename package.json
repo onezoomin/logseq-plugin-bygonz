@@ -11,12 +11,13 @@
   "dependencies": {
     "@logseq/libs": "^0.0.10",
     "@multiformats/multiaddr": "^11.0.7",
-    "@stdlib/array-uint8": "^0.0.7",
     "buffer": "^6.0.3",
     "bygonz": "link:../ztax/src/bygonz",
     "deep-object-diff": "^1.1.7",
     "ipfs": "^0.65.0",
     "ipfs-http-client": "^59.0.0",
+    "ipfs-log": "^5.4.2",
+    "keystore-idb": "^0.15.5",
     "luxon": "^3.1.0",
     "orbit-db": "^0.28.7",
     "orbit-db-identity-provider": "^0.4.0",
@@ -54,6 +55,12 @@
     "vite": "3.2.2",
     "vite-plugin-global-polyfill": "github:PengBoUESTC/vite-plugin-global-polyfill",
     "vite-plugin-logseq": "1.1.2"
+  },
+  "pnpm": {
+    "//docs": "https://pnpm.io/package_json",
+    "overrides": {
+      "uint8arrays": "^3"
+    }
   },
   "logseq": {
     "id": "_bygonz",

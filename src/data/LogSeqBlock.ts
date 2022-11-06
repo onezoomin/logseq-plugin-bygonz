@@ -3,8 +3,7 @@ import { WithHashID, WithHistory, ModWho, TimeStampedBase } from 'bygonz'
 
 export type CompoundKeyNumStr = [number, string]
 
-
-/* 
+/*
 :block/properties-text-values
 :block/uuid
 :block/properties
@@ -18,11 +17,11 @@ export type CompoundKeyNumStr = [number, string]
 :block/path-refs
 :block/parent
 :block/unordered
-:block/page 
+:block/page
 */
 // BlockParams can be used for a js obj that will be cast to Block or BlockVM
 export interface BlockParams {
-  ID: string // => :block/uuid #uuid 
+  ID: string // => :block/uuid #uuid
 
   creator?: string
   created?: number
@@ -48,7 +47,7 @@ export interface BlockParams {
 }
 
 export class Block extends Mixin(TimeStampedBase, ModWho) {
-  ID: string // => :block/uuid #uuid 
+  ID: string // => :block/uuid #uuid
   isDeleted?: boolean
   ':db/id': number
   ':block/content': string
@@ -65,15 +64,15 @@ export class Block extends Mixin(TimeStampedBase, ModWho) {
   ':block/properties'?: any
   ':block/properties-text-values'?: Record<string, any>
 
-  constructor(obj: BlockParams) {
+  constructor (obj: BlockParams) {
     super(obj) // all Mixedin supers are called in left to right order
     Object.assign(this, obj)
   }
 }
 
 export class BlockVM extends Mixin(Block, WithHistory) {
-  public get blockAsDataLog() {
-    //TODO remember ID => :block/uuid
+  public get blockAsDataLog () {
+    // TODO remember ID => :block/uuid
     return `TODO fetch current block props rolled up like logseq expects it for rendering eg:
     {:block/uuid #uuid "63619191-9216-4ff6-8fa3-fc34c4af7d1e",
     :block/properties {},
@@ -89,50 +88,50 @@ export class BlockVM extends Mixin(Block, WithHistory) {
     `
   }
 
-  async getBlockHistoryEntries() {
+  async getBlockHistoryEntries () {
     return (await this.getEntityHistory()).filter((eachLog) => eachLog.at === ':block/content')
   }
 
-  async getBlockHistoryValues() {
+  async getBlockHistoryValues () {
     return Object.values(await this.getAttributeHistory(':block/content'))
   }
 
-  async setBlockContent(blockContent: string) {
+  async setBlockContent (blockContent: string) {
     console.log('set', this.ID, blockContent)
     const { getInitializedBlocksDB } = await import('./bygonz')
     const blocksDB = await getInitializedBlocksDB()
     void blocksDB.Blocks.update(this.ID, { ':block/content': blockContent })
   }
 
-  async setDeleted() {
+  async setDeleted () {
     console.log('del', this.ID)
     const { getInitializedBlocksDB } = await import('./bygonz')
     const blocksDB = await getInitializedBlocksDB()
     void blocksDB.Blocks.update(this.ID, { ':block/content': '-deleted-', isDeleted: true })
   }
-
 }
 
 export const initialBlocks = [
   new Block({
-    ID: "6362c03c-fd5f-49e5-af3e-7459a1f09b33",
-    ":db/id": 539,
-    ":block/unordered": true,
-    ":block/parent": {
-      "id": 19
+    ID: '6362c03c-fd5f-49e5-af3e-7459a1f09b33',
+    ':block/uuid': '6362c03c-fd5f-49e5-af3e-7459a1f09b33',
+    ':db/id': 539,
+    ':block/unordered': true,
+    ':block/parent': {
+      id: 19,
     },
-    ":block/path-refs": [
+    ':block/path-refs': [
       {
-        "id": 19
-      }
+        id: 19,
+      },
     ],
-    ":block/content": "Basic Mock Tree for Sync",
-    ":block/page": {
-      "id": 19
+    ':block/content': 'Basic Mock Tree for Sync',
+    ':block/page': {
+      id: 19,
     },
-    ":block/left": {
-      "id": 538
+    ':block/left': {
+      id: 538,
     },
-    ":block/format": "markdown"
+    ':block/format': 'markdown',
   }),
 ]

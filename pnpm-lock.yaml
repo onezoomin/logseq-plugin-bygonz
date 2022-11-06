@@ -1,5 +1,8 @@
 lockfileVersion: 5.4
 
+overrides:
+  uint8arrays: ^3
+
 specifiers:
   '@logseq/libs': ^0.0.10
   '@multiformats/multiaddr': ^11.0.7
@@ -7,7 +10,6 @@ specifiers:
   '@semantic-release/exec': 6.0.3
   '@semantic-release/git': 10.0.1
   '@semantic-release/npm': 9.0.1
-  '@stdlib/array-uint8': ^0.0.7
   '@types/luxon': ^3.1.0
   '@types/node': 18.11.9
   '@types/react': 18.0.24
@@ -29,6 +31,8 @@ specifiers:
   eslint-plugin-react-hooks: 4.6.0
   ipfs: ^0.65.0
   ipfs-http-client: ^59.0.0
+  ipfs-log: ^5.4.2
+  keystore-idb: ^0.15.5
   luxon: ^3.1.0
   orbit-db: ^0.28.7
   orbit-db-identity-provider: ^0.4.0
@@ -48,12 +52,13 @@ specifiers:
 dependencies:
   '@logseq/libs': 0.0.10
   '@multiformats/multiaddr': 11.0.7_undici@5.12.0
-  '@stdlib/array-uint8': 0.0.7
   buffer: 6.0.3
   bygonz: link:../ztax/src/bygonz
   deep-object-diff: 1.1.7
   ipfs: 0.65.0_bscc3tw2fidyh2vku4mht5qisa
   ipfs-http-client: 59.0.0_undici@5.12.0
+  ipfs-log: 5.4.2_fskqt6f5sbjhdf3mw3n6is6wsy
+  keystore-idb: 0.15.5
   luxon: 3.1.0
   orbit-db: 0.28.7_fskqt6f5sbjhdf3mw3n6is6wsy
   orbit-db-identity-provider: 0.4.0
@@ -467,7 +472,7 @@ packages:
       it-stream-types: 1.0.4
       protons-runtime: 4.0.1_uint8arraylist@2.3.3
       uint8arraylist: 2.3.3
-      uint8arrays: 4.0.2
+      uint8arrays: 3.1.1
     transitivePeerDependencies:
       - supports-color
     dev: false
@@ -1252,7 +1257,7 @@ packages:
       multiformats: 10.0.2
       node-forge: 1.3.1
       protons-runtime: 4.0.1_uint8arraylist@2.3.3
-      uint8arrays: 4.0.2
+      uint8arrays: 3.1.1
     transitivePeerDependencies:
       - uint8arraylist
     dev: false
@@ -1307,7 +1312,7 @@ packages:
       '@libp2p/pubsub': 5.0.0_undici@5.12.0
       protons-runtime: 4.0.1_uint8arraylist@2.3.3
       uint8arraylist: 2.3.3
-      uint8arrays: 4.0.2
+      uint8arrays: 3.1.1
     transitivePeerDependencies:
       - supports-color
       - undici
@@ -1610,7 +1615,7 @@ packages:
       protons-runtime: 4.0.1_uint8arraylist@2.3.3
       timeout-abort-controller: 3.0.0
       uint8arraylist: 2.3.3
-      uint8arrays: 4.0.2
+      uint8arrays: 3.1.1
       varint: 6.0.0
     transitivePeerDependencies:
       - supports-color
@@ -1664,7 +1669,7 @@ packages:
       it-stream-types: 1.0.4
       rate-limiter-flexible: 2.4.1
       uint8arraylist: 2.3.3
-      uint8arrays: 4.0.2
+      uint8arrays: 3.1.1
       varint: 6.0.0
     transitivePeerDependencies:
       - supports-color
@@ -1689,7 +1694,7 @@ packages:
       it-stream-types: 1.0.4
       p-defer: 4.0.0
       uint8arraylist: 2.3.3
-      uint8arrays: 4.0.2
+      uint8arrays: 3.1.1
     transitivePeerDependencies:
       - supports-color
     dev: false
@@ -1713,7 +1718,7 @@ packages:
       multiformats: 10.0.2
       protons-runtime: 4.0.1_uint8arraylist@2.3.3
       uint8arraylist: 2.3.3
-      uint8arrays: 4.0.2
+      uint8arrays: 3.1.1
     dev: false
 
   /@libp2p/peer-id/1.1.16:
@@ -1723,7 +1728,7 @@ packages:
       '@libp2p/interface-peer-id': 1.0.5
       err-code: 3.0.1
       multiformats: 10.0.2
-      uint8arrays: 4.0.2
+      uint8arrays: 3.1.1
     dev: false
 
   /@libp2p/peer-record/4.0.4_undici@5.12.0:
@@ -1748,7 +1753,7 @@ packages:
       protons-runtime: 4.0.1_uint8arraylist@2.3.3
       uint8-varint: 1.0.4
       uint8arraylist: 2.3.3
-      uint8arrays: 4.0.2
+      uint8arrays: 3.1.1
       varint: 6.0.0
     transitivePeerDependencies:
       - supports-color
@@ -1779,7 +1784,7 @@ packages:
       multiformats: 10.0.2
       protons-runtime: 4.0.1_uint8arraylist@2.3.3
       uint8arraylist: 2.3.3
-      uint8arrays: 4.0.2
+      uint8arrays: 3.1.1
     transitivePeerDependencies:
       - supports-color
       - undici
@@ -1838,7 +1843,7 @@ packages:
       multiformats: 10.0.2
       p-queue: 7.3.0
       uint8arraylist: 2.3.3
-      uint8arrays: 4.0.2
+      uint8arrays: 3.1.1
     transitivePeerDependencies:
       - supports-color
       - undici
@@ -1853,7 +1858,7 @@ packages:
       multiformats: 10.0.2
       protons-runtime: 4.0.1_uint8arraylist@2.3.3
       uint8arraylist: 2.3.3
-      uint8arrays: 4.0.2
+      uint8arrays: 3.1.1
     transitivePeerDependencies:
       - supports-color
       - undici
@@ -1932,7 +1937,7 @@ packages:
       it-stream-types: 1.0.4
       p-defer: 4.0.0
       p-event: 5.0.1
-      uint8arrays: 4.0.2
+      uint8arrays: 3.1.1
     transitivePeerDependencies:
       - supports-color
     dev: false
@@ -1973,7 +1978,7 @@ packages:
       multiformats: 10.0.2
       p-defer: 4.0.0
       socket.io-client: 4.5.3
-      uint8arrays: 4.0.2
+      uint8arrays: 3.1.1
     transitivePeerDependencies:
       - bufferutil
       - supports-color
@@ -2071,7 +2076,7 @@ packages:
       dns-over-http-resolver: 2.1.0_undici@5.12.0
       err-code: 3.0.1
       multiformats: 10.0.2
-      uint8arrays: 4.0.2
+      uint8arrays: 3.1.1
       varint: 6.0.0
     transitivePeerDependencies:
       - supports-color
@@ -2603,125 +2608,6 @@ packages:
       '@stablelib/constant-time': 1.0.1
       '@stablelib/wipe': 1.0.1
       '@stablelib/xchacha20': 1.0.1
-    dev: false
-
-  /@stdlib/array-uint8/0.0.7:
-    resolution: {integrity: sha512-qYJQQfGKIcky6TzHFIGczZYTuVlut7oO+V8qUBs7BJC9TwikVnnOmb3hY3jToY4xaoi5p9OvgdJKPInhyIhzFg==}
-    engines: {node: '>=0.10.0', npm: '>2.7.0'}
-    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
-    dependencies:
-      '@stdlib/assert-has-uint8array-support': 0.0.8
-    dev: false
-
-  /@stdlib/assert-has-own-property/0.0.7:
-    resolution: {integrity: sha512-3YHwSWiUqGlTLSwxAWxrqaD1PkgcJniGyotJeIt5X0tSNmSW0/c9RWroCImTUUB3zBkyBJ79MyU9Nf4Qgm59fQ==}
-    engines: {node: '>=0.10.0', npm: '>2.7.0'}
-    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
-    dev: false
-
-  /@stdlib/assert-has-symbol-support/0.0.8:
-    resolution: {integrity: sha512-PoQ9rk8DgDCuBEkOIzGGQmSnjtcdagnUIviaP5YskB45/TJHXseh4NASWME8FV77WFW9v/Wt1MzKFKMzpDFu4Q==}
-    engines: {node: '>=0.10.0', npm: '>2.7.0'}
-    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
-    hasBin: true
-    dependencies:
-      '@stdlib/cli-ctor': 0.0.3
-      '@stdlib/fs-read-file': 0.0.8
-    dev: false
-
-  /@stdlib/assert-has-tostringtag-support/0.0.9:
-    resolution: {integrity: sha512-UTsqdkrnQ7eufuH5BeyWOJL3ska3u5nvDWKqw3onNNZ2mvdgkfoFD7wHutVGzAA2rkTsSJAMBHVwWLsm5SbKgw==}
-    engines: {node: '>=0.10.0', npm: '>2.7.0'}
-    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
-    hasBin: true
-    dependencies:
-      '@stdlib/assert-has-symbol-support': 0.0.8
-      '@stdlib/cli-ctor': 0.0.3
-      '@stdlib/fs-read-file': 0.0.8
-    dev: false
-
-  /@stdlib/assert-has-uint8array-support/0.0.8:
-    resolution: {integrity: sha512-ie4vGTbAS/5Py+LLjoSQi0nwtYBp+WKk20cMYCzilT0rCsBI/oez0RqHrkYYpmt4WaJL4eJqC+/vfQ5NsI7F5w==}
-    engines: {node: '>=0.10.0', npm: '>2.7.0'}
-    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
-    hasBin: true
-    dependencies:
-      '@stdlib/assert-is-uint8array': 0.0.8
-      '@stdlib/cli-ctor': 0.0.3
-      '@stdlib/constants-uint8-max': 0.0.7
-      '@stdlib/fs-read-file': 0.0.8
-    dev: false
-
-  /@stdlib/assert-is-uint8array/0.0.8:
-    resolution: {integrity: sha512-8cqpDQtjnJAuVtRkNAktn45ixq0JHaGJxVsSiK79k7GRggvMI6QsbzO6OvcLnZ/LimD42FmgbLd13Yc2esDmZw==}
-    engines: {node: '>=0.10.0', npm: '>2.7.0'}
-    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
-    dependencies:
-      '@stdlib/utils-native-class': 0.0.8
-    dev: false
-
-  /@stdlib/cli-ctor/0.0.3:
-    resolution: {integrity: sha512-0zCuZnzFyxj66GoF8AyIOhTX5/mgGczFvr6T9h4mXwegMZp8jBC/ZkOGMwmp+ODLBTvlcnnDNpNFkDDyR6/c2g==}
-    engines: {node: '>=0.10.0', npm: '>2.7.0'}
-    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
-    dependencies:
-      '@stdlib/utils-define-nonenumerable-read-only-property': 0.0.7
-      '@stdlib/utils-noop': 0.0.13
-      minimist: 1.2.6
-    dev: false
-
-  /@stdlib/constants-uint8-max/0.0.7:
-    resolution: {integrity: sha512-fqV+xds4jgwFxwWu08b8xDuIoW6/D4/1dtEjZ1sXVeWR7nf0pjj1cHERq4kdkYxsvOGu+rjoR3MbjzpFc4fvSw==}
-    engines: {node: '>=0.10.0', npm: '>2.7.0'}
-    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
-    dev: false
-
-  /@stdlib/fs-read-file/0.0.8:
-    resolution: {integrity: sha512-pIZID/G91+q7ep4x9ECNC45+JT2j0+jdz/ZQVjCHiEwXCwshZPEvxcPQWb9bXo6coOY+zJyX5TwBIpXBxomWFg==}
-    engines: {node: '>=0.10.0', npm: '>2.7.0'}
-    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
-    hasBin: true
-    dependencies:
-      '@stdlib/cli-ctor': 0.0.3
-      '@stdlib/utils-define-nonenumerable-read-only-property': 0.0.7
-    dev: false
-
-  /@stdlib/types/0.0.14:
-    resolution: {integrity: sha512-AP3EI9/il/xkwUazcoY+SbjtxHRrheXgSbWZdEGD+rWpEgj6n2i63hp6hTOpAB5NipE0tJwinQlDGOuQ1lCaCw==}
-    engines: {node: '>=0.10.0', npm: '>2.7.0'}
-    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
-    dev: false
-
-  /@stdlib/utils-define-nonenumerable-read-only-property/0.0.7:
-    resolution: {integrity: sha512-c7dnHDYuS4Xn3XBRWIQBPcROTtP/4lkcFyq0FrQzjXUjimfMgHF7cuFIIob6qUTnU8SOzY9p0ydRR2QJreWE6g==}
-    engines: {node: '>=0.10.0', npm: '>2.7.0'}
-    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
-    dependencies:
-      '@stdlib/types': 0.0.14
-      '@stdlib/utils-define-property': 0.0.9
-    dev: false
-
-  /@stdlib/utils-define-property/0.0.9:
-    resolution: {integrity: sha512-pIzVvHJvVfU/Lt45WwUAcodlvSPDDSD4pIPc9WmIYi4vnEBA9U7yHtiNz2aTvfGmBMTaLYTVVFIXwkFp+QotMA==}
-    engines: {node: '>=0.10.0', npm: '>2.7.0'}
-    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
-    dependencies:
-      '@stdlib/types': 0.0.14
-    dev: false
-
-  /@stdlib/utils-native-class/0.0.8:
-    resolution: {integrity: sha512-0Zl9me2V9rSrBw/N8o8/9XjmPUy8zEeoMM0sJmH3N6C9StDsYTjXIAMPGzYhMEWaWHvGeYyNteFK2yDOVGtC3w==}
-    engines: {node: '>=0.10.0', npm: '>2.7.0'}
-    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
-    dependencies:
-      '@stdlib/assert-has-own-property': 0.0.7
-      '@stdlib/assert-has-tostringtag-support': 0.0.9
-    dev: false
-
-  /@stdlib/utils-noop/0.0.13:
-    resolution: {integrity: sha512-JRWHGWYWP5QK7SQ2cOYiL8NETw8P33LriZh1p9S2xC4e0rBoaY849h1A2IL2y1+x3s29KNjSaBWMrMUIV5HCSw==}
-    engines: {node: '>=0.10.0', npm: '>2.7.0'}
-    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
     dev: false
 
   /@szmarczak/http-timer/4.0.6:
@@ -4245,7 +4131,7 @@ packages:
       cids: 1.1.9
       ipld-dag-cbor: 0.17.1
       multihashes: 4.0.3
-      uint8arrays: 2.1.10
+      uint8arrays: 3.1.1
       varint: 6.0.0
     dev: false
 
@@ -4279,7 +4165,7 @@ packages:
       it-pipe: 2.0.4
       it-pushable: 3.1.0
       it-take: 1.0.2
-      uint8arrays: 4.0.2
+      uint8arrays: 3.1.1
     transitivePeerDependencies:
       - supports-color
     dev: false
@@ -4327,7 +4213,7 @@ packages:
       debug: 4.3.4
       err-code: 3.0.1
       interface-datastore: 7.0.1
-      uint8arrays: 4.0.2
+      uint8arrays: 3.1.1
     transitivePeerDependencies:
       - supports-color
       - undici
@@ -4568,7 +4454,7 @@ packages:
       did-resolver: 3.2.2
       query-string: 7.1.1
       rpc-utils: 0.3.4
-      uint8arrays: 2.1.10
+      uint8arrays: 3.1.1
     dev: false
 
   /didyoumean/1.2.2:
@@ -6143,7 +6029,7 @@ packages:
     engines: {node: '>=16.0.0', npm: '>=7.0.0'}
     dependencies:
       sparse-array: 1.3.2
-      uint8arrays: 4.0.2
+      uint8arrays: 3.1.1
     dev: false
 
   /handlebars/4.7.7:
@@ -6396,6 +6282,10 @@ packages:
     engines: {node: '>= 4'}
     dev: true
 
+  /immediate/3.0.6:
+    resolution: {integrity: sha512-XXOFtyqDjNDAQxVfYxuF7g9Il/IbWmmlQg2MYKOH8ExIT1qg6xc4zyS3HaEEATgs1btfzxq15ciUiY7gjSXRGQ==}
+    dev: false
+
   /immediate/3.2.3:
     resolution: {integrity: sha512-RrGCXRm/fRVqMIhqXrGEX9rRADavPiDFSoMb/k64i9XMk8uH4r/Omi5Ctierj6XzNecwDbO4WuFbDD1zmpl3Tg==}
     dev: false
@@ -6465,7 +6355,7 @@ packages:
     dependencies:
       interface-store: 3.0.1
       nanoid: 4.0.0
-      uint8arrays: 4.0.2
+      uint8arrays: 3.1.1
     dev: false
 
   /interface-store/3.0.1:
@@ -6529,7 +6419,7 @@ packages:
       protobufjs: 7.1.2
       readable-stream: 4.2.0
       timeout-abort-controller: 3.0.0
-      uint8arrays: 4.0.2
+      uint8arrays: 3.1.1
       varint: 6.0.0
       varint-decoder: 1.0.0
     transitivePeerDependencies:
@@ -6569,7 +6459,7 @@ packages:
       pretty-bytes: 6.0.0
       progress: 2.0.3
       stream-to-it: 0.2.4
-      uint8arrays: 4.0.2
+      uint8arrays: 3.1.1
       yargs: 17.6.2
     transitivePeerDependencies:
       - bufferutil
@@ -6604,7 +6494,7 @@ packages:
       it-drain: 2.0.0
       it-foreach: 1.0.0
       p-queue: 7.3.0
-      uint8arrays: 4.0.2
+      uint8arrays: 3.1.1
     transitivePeerDependencies:
       - bufferutil
       - supports-color
@@ -6654,7 +6544,7 @@ packages:
       nanoid: 4.0.0
       parse-duration: 1.0.2
       timeout-abort-controller: 3.0.0
-      uint8arrays: 4.0.2
+      uint8arrays: 3.1.1
     transitivePeerDependencies:
       - supports-color
       - undici
@@ -6734,7 +6624,7 @@ packages:
       pako: 2.0.4
       parse-duration: 1.0.2
       timeout-abort-controller: 3.0.0
-      uint8arrays: 4.0.2
+      uint8arrays: 3.1.1
     transitivePeerDependencies:
       - bufferutil
       - encoding
@@ -6795,7 +6685,7 @@ packages:
       it-pushable: 3.1.0
       nanoid: 4.0.0
       protobufjs: 7.1.2
-      uint8arrays: 4.0.2
+      uint8arrays: 3.1.1
       ws: 8.10.0
     transitivePeerDependencies:
       - bufferutil
@@ -6826,7 +6716,7 @@ packages:
       multiformats: 10.0.2
       parse-duration: 1.0.2
       stream-to-it: 0.2.4
-      uint8arrays: 4.0.2
+      uint8arrays: 3.1.1
     transitivePeerDependencies:
       - supports-color
       - undici
@@ -6849,7 +6739,7 @@ packages:
       it-to-stream: 1.0.0
       joi: 17.7.0
       multiformats: 10.0.2
-      uint8arrays: 4.0.2
+      uint8arrays: 3.1.1
     transitivePeerDependencies:
       - supports-color
       - undici
@@ -6910,7 +6800,7 @@ packages:
       parse-duration: 1.0.2
       stream-to-it: 0.2.4
       timeout-abort-controller: 3.0.0
-      uint8arrays: 4.0.2
+      uint8arrays: 3.1.1
     optionalDependencies:
       prom-client: 14.1.0
     transitivePeerDependencies:
@@ -6965,7 +6855,7 @@ packages:
       it-length: 2.0.0
       multiformats: 10.0.2
       protobufjs: 7.1.2
-      uint8arrays: 4.0.2
+      uint8arrays: 3.1.1
       varint: 6.0.0
     transitivePeerDependencies:
       - supports-color
@@ -7002,7 +6892,7 @@ packages:
       proper-lockfile: 4.1.2
       quick-lru: 6.1.1
       sort-keys: 5.0.0
-      uint8arrays: 4.0.2
+      uint8arrays: 3.1.1
     transitivePeerDependencies:
       - supports-color
       - undici
@@ -7026,7 +6916,7 @@ packages:
       it-pushable: 3.1.0
       multiformats: 10.0.2
       p-queue: 7.3.0
-      uint8arrays: 4.0.2
+      uint8arrays: 3.1.1
     dev: false
 
   /ipfs-unixfs-importer/11.0.1:
@@ -7047,7 +6937,7 @@ packages:
       multiformats: 10.0.2
       rabin-wasm: 0.1.5
       uint8arraylist: 2.3.3
-      uint8arrays: 4.0.2
+      uint8arrays: 3.1.1
     transitivePeerDependencies:
       - encoding
       - supports-color
@@ -7131,7 +7021,7 @@ packages:
       is-circular: 1.0.2
       multicodec: 3.2.1
       multihashing-async: 2.1.4
-      uint8arrays: 2.1.10
+      uint8arrays: 3.1.1
     dev: false
 
   /ipns/4.0.0_bscc3tw2fidyh2vku4mht5qisa:
@@ -7150,7 +7040,7 @@ packages:
       multiformats: 10.0.2
       protons-runtime: 4.0.1_uint8arraylist@2.3.3
       timestamp-nano: 1.0.0
-      uint8arrays: 4.0.2
+      uint8arrays: 3.1.1
     transitivePeerDependencies:
       - supports-color
       - uint8arraylist
@@ -7312,7 +7202,7 @@ packages:
       '@multiformats/multiaddr': 11.0.7_undici@5.12.0
       iso-url: 1.2.1
       multiformats: 10.0.2
-      uint8arrays: 4.0.2
+      uint8arrays: 3.1.1
     transitivePeerDependencies:
       - supports-color
       - undici
@@ -7551,7 +7441,7 @@ packages:
     engines: {node: '>=16.0.0', npm: '>=7.0.0'}
     dependencies:
       uint8arraylist: 2.3.3
-      uint8arrays: 4.0.2
+      uint8arrays: 3.1.1
     dev: false
 
   /it-drain/1.0.5:
@@ -7621,7 +7511,7 @@ packages:
       it-stream-types: 1.0.4
       uint8-varint: 1.0.4
       uint8arraylist: 2.3.3
-      uint8arrays: 4.0.2
+      uint8arrays: 3.1.1
     dev: false
 
   /it-length/1.0.4:
@@ -7781,14 +7671,14 @@ packages:
       it-to-buffer: 3.0.0
       p-defer: 4.0.0
       uint8arraylist: 2.3.3
-      uint8arrays: 4.0.2
+      uint8arrays: 3.1.1
     dev: false
 
   /it-to-buffer/3.0.0:
     resolution: {integrity: sha512-W+wNv0CBXVPLMSKKKJXJFcWdsB/MpVUpQkExV/bjjwGhTQJRj29lZuBYSt0Gjad8GDgRCdSwVcKIe6cVY5epGw==}
     engines: {node: '>=16.0.0', npm: '>=7.0.0'}
     dependencies:
-      uint8arrays: 4.0.2
+      uint8arrays: 3.1.1
     dev: false
 
   /it-to-stream/1.0.0:
@@ -7809,7 +7699,7 @@ packages:
       event-iterator: 2.0.0
       iso-url: 1.2.1
       it-stream-types: 1.0.4
-      uint8arrays: 4.0.2
+      uint8arrays: 3.1.1
       ws: 8.10.0
     transitivePeerDependencies:
       - bufferutil
@@ -8004,6 +7894,15 @@ packages:
 
   /keypair/1.0.4:
     resolution: {integrity: sha512-zwhgOhhniaL7oxMgUMKKw5219PWWABMO+dgMnzJOQ2/5L3XJtTJGhW2PEXlxXj9zaccdReZJZ83+4NPhVfNVDg==}
+    dev: false
+
+  /keystore-idb/0.15.5:
+    resolution: {integrity: sha512-7bcUAnY5iD0+N75odQVTCs8mhXBW+yLt9/HH8+VUrl44FGllpAhu7q3/w9QpNMHxLQv3OXs1fsA042CAviN79Q==}
+    engines: {node: '>=10.21.0'}
+    dependencies:
+      localforage: 1.10.0
+      one-webcrypto: 1.0.3
+      uint8arrays: 3.1.1
     dev: false
 
   /keyv/4.5.0:
@@ -8282,12 +8181,18 @@ packages:
       set-delayed-interval: 1.0.0
       timeout-abort-controller: 3.0.0
       uint8arraylist: 2.3.3
-      uint8arrays: 4.0.2
+      uint8arrays: 3.1.1
       wherearewe: 2.0.1
       xsalsa20: 1.2.0
     transitivePeerDependencies:
       - supports-color
       - undici
+    dev: false
+
+  /lie/3.1.1:
+    resolution: {integrity: sha512-RiNhHysUjhrDQntfYSfY4MU24coXXdEOgw9WGcKHNeEwffDYbF//u87M1EWaMGzuFoSbqW0C9C6lEEhDOAswfw==}
+    dependencies:
+      immediate: 3.0.6
     dev: false
 
   /lilconfig/2.0.6:
@@ -8318,6 +8223,12 @@ packages:
       pify: 4.0.1
       strip-bom: 3.0.0
       type-fest: 0.3.1
+    dev: false
+
+  /localforage/1.10.0:
+    resolution: {integrity: sha512-14/H1aX7hzBBmmh7sGPd+AOMkkIrHM3Z1PAyGgZigA1H1p5O5ANnMyWzvpAETtG68/dC4pC0ncy3+PPGzXZHPg==}
+    dependencies:
+      lie: 3.1.1
     dev: false
 
   /localstorage-down/0.6.7:
@@ -8802,7 +8713,7 @@ packages:
     engines: {node: '>=10.0.0', npm: '>=6.0.0'}
     dependencies:
       multibase: 3.1.2
-      uint8arrays: 1.1.0
+      uint8arrays: 3.1.1
       varint: 5.0.2
     dev: false
 
@@ -9271,6 +9182,10 @@ packages:
     resolution: {integrity: sha512-lNaJgI+2Q5URQBkccEKHTQOPaXdUxnZZElQTZY0MFUAuaEqe1E+Nyvgdz/aIyNi6Z9MzO5dv1H8n58/GELp3+w==}
     dependencies:
       wrappy: 1.0.2
+
+  /one-webcrypto/1.0.3:
+    resolution: {integrity: sha512-fu9ywBVBPx0gS9K0etIROTiCkvI5S1TDjFsYFb3rC1ewFxeOqsbzq7aIMBHsYfrTHBcGXJaONXXjTl8B01cW1Q==}
+    dev: false
 
   /onetime/5.1.2:
     resolution: {integrity: sha512-kbpaSSGJTWdAY5KPVeMOKXSrPtr8C8C7wodJbcsd51jRnmD+GZu8Y0VoU6Dm5Z4vWr0Ig/1NKuWRKf7j5aaYSg==}
@@ -11612,40 +11527,20 @@ packages:
       byte-access: 1.0.1
       longbits: 1.1.0
       uint8arraylist: 2.3.3
-      uint8arrays: 4.0.2
+      uint8arrays: 3.1.1
     dev: false
 
   /uint8arraylist/2.3.3:
     resolution: {integrity: sha512-5uM6jtxAEnkRSTQewKCwX5IvaQb1gTadNSQLTZexNh9j8e10+0o208VP81VGmfkMUud2ApMxT5O6P4BRu1J/jA==}
     engines: {node: '>=16.0.0', npm: '>=7.0.0'}
     dependencies:
-      uint8arrays: 4.0.2
-    dev: false
-
-  /uint8arrays/1.1.0:
-    resolution: {integrity: sha512-cLdlZ6jnFczsKf5IH1gPHTtcHtPGho5r4CvctohmQjw8K7Q3gFdfIGHxSTdTaCKrL4w09SsPRJTqRS0drYeszA==}
-    dependencies:
-      multibase: 3.1.2
-      web-encoding: 1.1.5
-    dev: false
-
-  /uint8arrays/2.1.10:
-    resolution: {integrity: sha512-Q9/hhJa2836nQfEJSZTmr+pg9+cDJS9XEAp7N2Vg5MzL3bK/mkMVfjscRGYruP9jNda6MAdf4QD/y78gSzkp6A==}
-    dependencies:
-      multiformats: 9.9.0
+      uint8arrays: 3.1.1
     dev: false
 
   /uint8arrays/3.1.1:
     resolution: {integrity: sha512-+QJa8QRnbdXVpHYjLoTpJIdCTiw9Ir62nocClWuXIq2JIh4Uta0cQsTSpFL678p2CN8B+XSApwcU+pQEqVpKWg==}
     dependencies:
       multiformats: 9.9.0
-    dev: false
-
-  /uint8arrays/4.0.2:
-    resolution: {integrity: sha512-8CWXXZdOvVrIL4SeY/Gnp+idxxiGK4XFkP4FY26Sx/fpTz/b6vv4BVWELMDzQweSyyhdcuAcU14H6izzB6k1Cw==}
-    engines: {node: '>=16.0.0', npm: '>=7.0.0'}
-    dependencies:
-      multiformats: 10.0.2
     dev: false
 
   /unbox-primitive/1.0.2:

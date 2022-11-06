@@ -3,6 +3,7 @@ import Log from 'ipfs-log'
 // import * as IPFS from 'ipfs'
 import { DateTime } from 'luxon'
 import IdentityProvider from 'orbit-db-identity-provider'
+import keystore from 'keystore-idb'
 import { multiaddr } from '@multiformats/multiaddr'
 import * as IPFS from 'ipfs-http-client'
 import { BlockEntity } from '@logseq/libs/dist/LSPlugin'
@@ -14,10 +15,15 @@ let log: Log
 
 export async function initIPFS () {
   console.log('Initializing IPFS...')
+  // const keystore = await keystore.init({ storeName: 'keystore' })
   identity = await IdentityProvider.createIdentity({ id: `manutest${navigator.userAgent.includes('Electron') ? 'electron' : 'browser'}` })
   ipfs = IPFS.create({
     url: 'http://127.0.0.1:5001/',
   })
+  await ipfs.pubsub.subscribe('manutest', (msg) => {
+    console.log('[pubsub] message:', msg)
+  })
+
   /* ipfs = await IPFS.create({ / * repo: "./path-for-js-ipfs-repo" * /
     // start: false,
     // config: {
@@ -67,8 +73,10 @@ export async function initIPFS () {
   await log.append({ some: 'data', time: DateTime.now().toISO() })
   //   await log.append('text')
   console.log('log:', log.values.map((e: any) => e.payload))
-  console.log('heads:', log.heads.map(t => t.hash))
-  console.log('LOG ADDRESS:', await log.toMultihash())
+  console.log('heads:', log.heads.map((t: any) => t.hash))
+  const logHash = await log.toMultihash()
+  console.log('LOG ADDRESS:', logHash)
+  await ipfs.pubsub.publish('manutest', Buffer.from(logHash))
 }
 
 // for ease of development
