@@ -20,9 +20,23 @@ export default defineConfig({
     target: 'es2020',
     // minify: "esbuild",
   },
-  optimizeDeps: { esbuildOptions: { target: 'es2020' } },
+  optimizeDeps: {
+    esbuildOptions: { target: 'es2020' },
+    // https://vitejs.dev/config/server-options.html#server-watch
+    exclude: ['bygonz'],
+  },
 
   define: {
     'process.env': {},
+  },
+
+  // BYGONZ HOT RELOAD - https://vitejs.dev/config/server-options.html#server-watch
+  server: {
+    watch: {
+      ignored: [
+        // '!**/node_modules/bygonz/**',
+        '!../ztax/**',
+      ],
+    },
   },
 })

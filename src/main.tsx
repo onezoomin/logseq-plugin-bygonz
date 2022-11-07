@@ -207,6 +207,11 @@ function main () {
 
 logseq.ready(main).catch(console.error)
 
+if (import.meta.hot) {
+  console.log('[logseq-bygonz] 🤖 Hot reload detected - TODO handle properly')
+  main() // <- worth a try...?
+}
+
 if (!navigator.userAgent.includes('Electron')) {
   console.log('NOT electron - launching...', main)
   main()

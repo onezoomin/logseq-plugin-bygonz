@@ -6,7 +6,9 @@
 			"command": "task --exit-code dev",
 			"problemMatcher": [],
 			"label": "Dev",
-			 "runOptions": {"runOn": "folderOpen"}
+			"runOptions": {
+				"runOn": "folderOpen"
+			}
 		},
 		{
 			"type": "shell",

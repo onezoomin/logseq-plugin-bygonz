@@ -5,8 +5,12 @@
     "editor.codeActionsOnSave": [
         "source.fixAll",
     ],
-    "search.exclude": {
-        "dist": true
+    "files.watcherExclude": {
+        "**/.git/objects/**": true,
+        "**/.git/subtree-cache/**": true,
+        "**/node_modules/*/**": true,
+        "**/dist/**": true,
+        "**/.hg/store/**": true
     },
     "task.allowAutomaticTasks": "on",
     "editor.formatOnSave": false,
