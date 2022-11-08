@@ -11,7 +11,7 @@ export default defineConfig({
     logseqDevPlugin(),
     reactPlugin(),
     globalPolyfill(),
-    // @ts-expect-error
+    // @ ts-expect-error
     // nodePolyfills({}),
     // { ...globals(), name: 'rollup-plugin-node-globals' },
   ],

@@ -13,9 +13,11 @@ import { BlockParams } from './data/LogSeqBlock'
 
 import { detailedDiff } from 'deep-object-diff'
 // import { initIPFS, loadBlockFromIPFS } from './data/ipfs'
-
+import { Logger } from 'logger'
 import { Buffer } from 'buffer'
 globalThis.Buffer = Buffer
+
+const { WARN, LOG, DEBUG, VERBOSE } = Logger.setup(Logger.DEBUG, { performanceEnabled: true }) // eslint-disable-line @typescript-eslint/no-unused-vars
 
 const settings: SettingSchemaDesc[] = [
   {
@@ -106,7 +108,7 @@ function main () {
       await logseq.Editor.updateBlock(blockUuid, newContent)
       renderTimer({ pomoId, slotId, startTime })
     },
-    async bygonzSync ({
+    async bygonzSave ({
       pomoId, slotId,
       startTime, durationMins,
     }: any) {
@@ -143,6 +145,21 @@ function main () {
         template: `<a class="pomodoro-timer-btn ${currentBlock ? 'known-block' : 'unknown-block'}"> - bygonz ${currentBlock ? ' ✅' : '🍅'} -</a>`,
       })
     },
+
+    async bygonzLoad () {
+      // LOG('Triggering SYNC') // ? I think this was a brainfart...
+      // await blocksDB.triggerSubscriptionSync()
+
+      const currentBlock = await logseq.Editor.getCurrentBlock()
+      if (currentBlock) {
+        // const ID = currentBlock.uuid
+        const blocksDB = await getInitializedBlocksDB()
+        DEBUG('DB:', blocksDB)
+        await logseq.Editor.updateBlock(currentBlock.uuid, JSON.stringify('TODO: load?'))
+
+        LOG('SYNC done 🎉')
+      }
+    },
   })
 
   function renderTimer ({
@@ -174,14 +191,22 @@ function main () {
         slot,
         reset: true,
         template: `
-          <button
-            class="pomodoro-timer-btn is-start"
-            style="border: 1px dashed lightgrey; padding: 0.5rem 1rem;border-radius: 0.5rem;"
-            data-slot-id="${slot}" 
-            data-pomo-id="${pomoId}"
-            data-block-uuid="${payload.uuid}"
-            data-on-click="bygonzSync"
-          >bygonz</button>
+        <button
+          class="pomodoro-timer-btn is-start mr-2 bg-green-200"
+          style="border: 1px dashed lightgrey; padding: 0.5rem 1rem;border-radius: 0.5rem;"
+          data-slot-id="${slot}" 
+          data-pomo-id="${pomoId}"
+          data-block-uuid="${payload.uuid}"
+          data-on-click="bygonzSave"
+          >save to bygonz</button>
+        <button
+          class="pomodoro-timer-btn is-start bg-red-200"
+          style="border: 1px dashed lightgrey; padding: 0.5rem 1rem;border-radius: 0.5rem;"
+          data-slot-id="${slot}" 
+          data-pomo-id="${pomoId}"
+          data-block-uuid="${payload.uuid}"
+          data-on-click="bygonzLoad"
+          >load from bygonz</button>
         `,
       })
     }

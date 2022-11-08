@@ -22,6 +22,7 @@ const subscriptions: Subscription[] = [
       // appCreator: appNameObj.creator,
       // appName: appNameObj.name,
       accountName: 'bygonztest',
+      logId: 'bygonztestlog',
     },
   }),
   // new Subscription({
