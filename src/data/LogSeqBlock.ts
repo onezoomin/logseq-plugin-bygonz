@@ -1,5 +1,5 @@
 import { Mixin } from 'ts-mixer'
-import { WithHashID, WithHistory, ModWho, TimeStampedBase } from 'bygonz'
+import { WithHistory, ModWho, TimeStampedBase } from 'bygonz'
 
 export type CompoundKeyNumStr = [number, string]
 
@@ -71,6 +71,10 @@ export class Block extends Mixin(TimeStampedBase, ModWho) {
 }
 
 export class BlockVM extends Mixin(Block, WithHistory) {
+  public get ID () {
+    return this.uuid
+  }
+
   public get blockAsDataLog () {
     // TODO remember ID => :block/uuid
     return `TODO fetch current block props rolled up like logseq expects it for rendering eg:

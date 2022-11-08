@@ -47,7 +47,7 @@ export async function saveBlockRecursively (targetBlock: BlockEntity, blocksDB: 
   for (const child of children) {
     DEBUG('Recursing into child:', child)
     // @ts-expect-error
-    child.parent = ID
+    child.parent = targetBlock.uuid
     await saveBlockRecursively(child, blocksDB)
   }
 }
@@ -55,13 +55,16 @@ export async function saveBlockRecursively (targetBlock: BlockEntity, blocksDB: 
 export async function loadBlocksRecursively (currentBlock: BlockWithChildren, blockVMs: BlockVM[], currentVM: BlockVM | undefined = undefined, recursion = 0) {
   if (recursion > 10) throw new Error('Recursion limit reached')
   if (!currentVM) {
+    VERBOSE('no vm passed', { currentBlock, blockVMs })
     if (recursion !== 0) throw new Error('empty targetVM but inside recursion')
-    currentVM = blockVMs.find(b => b.ID === currentBlock.uuid)
+    currentVM = blockVMs.find(b => b.uuid === currentBlock.uuid)
     if (!currentVM) {
+      VERBOSE('still no vm found')
       const matchingVMs = blockVMs.filter(b => !b.parent) // in bygonz the root nodes don't have a parent
       if (matchingVMs.length !== 1) { ERROR('Blocks list:', blockVMs); throw new Error(`Failed to determine root block in blocks list (${matchingVMs.length} matches)`) }
       currentVM = matchingVMs[0]
-    } else { throw new Error(`${recursion === 0 ? 'Root ' : ''}Block ${currentBlock.uuid} has no matching VM`) }
+      if (/* still */ !currentVM) throw new Error(`${recursion === 0 ? 'Root ' : ''}Block ${currentBlock.uuid} has no matching VM`)
+    }
   }
 
   // Update self
@@ -70,7 +73,7 @@ export async function loadBlocksRecursively (currentBlock: BlockWithChildren, bl
 
   // Find & update children
   const childVMs = blockVMs
-    .filter(b => b.parent === currentVM!.ID)
+    .filter(b => b.parent === currentVM!.uuid)
   for (const childVM of childVMs) {
     let matching: BlockWithChildren | undefined | null = currentBlock.children.find(child => child.uuid === childVM.uuid)
     DEBUG('Updating child:', matching, 'from', childVM)

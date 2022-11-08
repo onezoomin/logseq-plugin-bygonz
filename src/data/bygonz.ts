@@ -1,12 +1,12 @@
 import type { Table } from 'bygonz'
 
-import { BlockParams, BlockVM, initialBlocks } from './LogSeqBlock'
+import { BlockParams, BlockVM } from './LogSeqBlock'
 import { BygonzDexie, DexiePlusParams, Subscription } from 'bygonz'
 
 const userAddressDef = 'defaultFixThisSoItNeverShowsUpAnywhere'
 
 const stores = {
-  Blocks: 'uuid, content, row, created, modified, owner, modifier',
+  Blocks: 'uuid, content, created, modified, owner, modifier',
   // Subscriptions: 'id++, account',
   // Schemes: 'ID, name, created, modified, owner, modifier',
 }

@@ -145,7 +145,7 @@ function main () {
 
         DEBUG('DB:', blocksDB)
         const entitiesResult = await blocksDB.getEntitiesAsOf()
-        DEBUG('Blocks:', entitiesResult)
+        DEBUG('Blocks:', { currentBlockWithKids, entitiesResult })
         const newBlocks: BlockVM[] = entitiesResult.entityArray
         await loadBlocksRecursively(currentBlockWithKids, newBlocks)
 
