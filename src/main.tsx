@@ -6,15 +6,18 @@ import App from './App'
 import './index.css'
 
 import { logseq as PL } from '../package.json'
-import { SettingSchemaDesc } from '@logseq/libs/dist/LSPlugin'
+import { BlockEntity, SettingSchemaDesc } from '@logseq/libs/dist/LSPlugin'
 
 import { BlocksDB, getInitializedBlocksDB } from './data/bygonz'
-import { BlockParams } from './data/LogSeqBlock'
+import { BlockParams, BlockVM } from './data/LogSeqBlock'
 
 import { detailedDiff } from 'deep-object-diff'
+
 // import { initIPFS, loadBlockFromIPFS } from './data/ipfs'
 import { Logger } from 'logger'
 import { Buffer } from 'buffer'
+import { BlockWithChildren, loadBlocksAndChildren, saveBlockRecursively } from './data/blocks-to-bygonz'
+import { flatMapRecursiveChildren } from './utils'
 globalThis.Buffer = Buffer
 
 const { WARN, LOG, DEBUG, VERBOSE } = Logger.setup(Logger.DEBUG, { performanceEnabled: true }) // eslint-disable-line @typescript-eslint/no-unused-vars
@@ -108,42 +111,20 @@ function main () {
       await logseq.Editor.updateBlock(blockUuid, newContent)
       renderTimer({ pomoId, slotId, startTime })
     },
-    async bygonzSave ({
-      pomoId, slotId,
-      startTime, durationMins,
-    }: any) {
+
+    async bygonzReset () {
+      await indexedDB.deleteDatabase('BygonzBlocks')
+      await indexedDB.deleteDatabase('BygonzLogDB_BygonzBlocks')
+      await indexedDB.deleteDatabase('bygonz_ipfs_persist')
+      // window.parent.location.reload()
+      // await logseq.App.relaunch()
+      WARN('reload please 💁')
+    },
+    async bygonzSave () {
       const currentBlock = await logseq.Editor.getCurrentBlock()
       if (currentBlock) {
-        const ID = currentBlock.uuid
-        const currentBlockWithKids = await logseq.Editor.getBlock(currentBlock?.uuid, { includeChildren: true })
-        console.log({ currentBlockWithKids })
-
-        const currentBlockByg = await blocksDB.Blocks.get(ID)
-        const mappedBlockObj: Partial<BlockParams> = { ID, ':db/id': currentBlock.id }
-        for (const eachKey of Object.keys(currentBlock)) {
-          if (eachKey === 'children') continue
-          mappedBlockObj[`:block/${eachKey}`] = currentBlock[eachKey] // HACK Does this mapping make sense?
-        }
-        if (!currentBlockByg) {
-          blocksDB.Blocks.add(mappedBlockObj)
-          console.log('adding', { mappedBlockObj })
-        } else {
-          const diff = detailedDiff(currentBlockByg as object, mappedBlockObj as object)
-          console.log({ currentBlockByg, diff })
-          const updateObj = { ...diff.added, ...diff.updated }
-          if (Object.keys(updateObj).length) {
-            console.log('updating with', { updateObj })
-
-            blocksDB.Blocks.update(ID, updateObj)
-          }
-        }
+        await saveBlockRecursively(currentBlock, blocksDB)
       }
-      logseq.provideUI({
-        key: pomoId,
-        slot: slotId,
-        reset: true,
-        template: `<a class="pomodoro-timer-btn ${currentBlock ? 'known-block' : 'unknown-block'}"> - bygonz ${currentBlock ? ' ✅' : '🍅'} -</a>`,
-      })
     },
 
     async bygonzLoad () {
@@ -152,10 +133,21 @@ function main () {
 
       const currentBlock = await logseq.Editor.getCurrentBlock()
       if (currentBlock) {
-        // const ID = currentBlock.uuid
-        const blocksDB = await getInitializedBlocksDB()
+        const currentBlockWithKids = await logseq.Editor
+          .getBlock(currentBlock?.uuid, { includeChildren: true }) as BlockWithChildren
+
+        // Delete all children 😈
+        for (const block of flatMapRecursiveChildren(currentBlockWithKids)) {
+          if (block === currentBlockWithKids) continue
+          DEBUG('REMOVING', block)
+          await logseq.Editor.removeBlock(block.uuid)
+        }
+
         DEBUG('DB:', blocksDB)
-        await logseq.Editor.updateBlock(currentBlock.uuid, JSON.stringify('TODO: load?'))
+        const entitiesResult = await blocksDB.getEntitiesAsOf()
+        DEBUG('Blocks:', entitiesResult)
+        const newBlocks: BlockVM[] = entitiesResult.entityArray
+        await loadBlocksAndChildren(currentBlock, newBlocks)
 
         LOG('SYNC done 🎉')
       }
@@ -200,13 +192,21 @@ function main () {
           data-on-click="bygonzSave"
           >save to bygonz</button>
         <button
-          class="pomodoro-timer-btn is-start bg-red-200"
+          class="pomodoro-timer-btn is-start mr-2 bg-yellow-200"
           style="border: 1px dashed lightgrey; padding: 0.5rem 1rem;border-radius: 0.5rem;"
           data-slot-id="${slot}" 
           data-pomo-id="${pomoId}"
           data-block-uuid="${payload.uuid}"
           data-on-click="bygonzLoad"
           >load from bygonz</button>
+        <button
+          class="pomodoro-timer-btn is-start bg-red-400"
+          style="border: 1px dashed lightgrey; padding: 0.5rem 1rem;border-radius: 0.5rem;"
+          data-slot-id="${slot}" 
+          data-pomo-id="${pomoId}"
+          data-block-uuid="${payload.uuid}"
+          data-on-click="bygonzReset"
+          >reset bygonz</button>
         `,
       })
     }

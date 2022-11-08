@@ -33,6 +33,7 @@ specifiers:
   ipfs-http-client: ^59.0.0
   ipfs-log: ^5.4.2
   keystore-idb: ^0.15.5
+  lodash-es: ^4.17.21
   logger: link:../ztax/src/logger
   luxon: ^3.1.0
   orbit-db: ^0.28.7
@@ -89,6 +90,7 @@ devDependencies:
   eslint-plugin-promise: 6.1.1_eslint@8.26.0
   eslint-plugin-react: 7.31.10_eslint@8.26.0
   eslint-plugin-react-hooks: 4.6.0_eslint@8.26.0
+  lodash-es: 4.17.21
   postcss: 8.4.18
   rollup-plugin-node-globals: 1.4.0
   rollup-plugin-node-polyfills: 0.2.1
@@ -8281,7 +8283,6 @@ packages:
 
   /lodash-es/4.17.21:
     resolution: {integrity: sha512-mKnC+QJ9pWVzv+C4/U3rRsHapFfHvQFoFB92e52xeyGMcX6/OlIl78je1u8vePzYZSkkogMPJ2yjxxsb89cxyw==}
-    dev: false
 
   /lodash.camelcase/4.3.0:
     resolution: {integrity: sha512-TwuEnCnxbc3rAvhf/LbG7tJUDzhqXyFnv3dtzLOPgCG/hODL7WFnsbwktkD7yUV0RrreP/l1PALq/YSg6VvjlA==}
