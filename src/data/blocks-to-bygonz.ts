@@ -4,6 +4,7 @@ import { BlockParams, BlockVM } from './LogSeqBlock'
 import { detailedDiff } from 'deep-object-diff'
 
 import { Logger } from 'logger'
+import { sleep } from 'bygonz'
 
 const { ERROR, WARN, LOG, DEBUG, VERBOSE } = Logger.setup(Logger.DEBUG, { performanceEnabled: true }) // eslint-disable-line @typescript-eslint/no-unused-vars
 
@@ -85,9 +86,11 @@ export async function loadBlocksRecursively (currentBlock: BlockWithChildren, bl
         childVM.content,
         { sibling: false, customUUID: childVM.uuid /*, properties: { TODO } */ },
       )
-      ERROR('empty insert result for', childVM)
-      if (!newBlock) throw new Error('Empty insert result')
-      matching = await logseq.Editor.getBlock(newBlock.uuid, { includeChildren: true }) as BlockWithChildren
+
+      if (!newBlock) { ERROR('empty insert result for', { childVM }); throw new Error('Empty insert result') }
+      await sleep(2500)
+      matching = await logseq.Editor.getBlock(childVM.uuid, { includeChildren: true }) as BlockWithChildren
+      if (!matching) { ERROR('empty get afert insert', { childVM, newBlock }); throw new Error('Empty get afert insert') }
     }
     await loadBlocksRecursively(matching, blockVMs, childVM, recursion + 1)
   }
