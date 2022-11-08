@@ -6,7 +6,7 @@ import { BygonzDexie, DexiePlusParams, Subscription } from 'bygonz'
 const userAddressDef = 'defaultFixThisSoItNeverShowsUpAnywhere'
 
 const stores = {
-  Blocks: 'ID, content, row, created, modified, owner, modifier',
+  Blocks: 'uuid, content, row, created, modified, owner, modifier',
   // Subscriptions: 'id++, account',
   // Schemes: 'ID, name, created, modified, owner, modifier',
 }

@@ -4,27 +4,29 @@ import { BlockParams, BlockVM } from './LogSeqBlock'
 import { detailedDiff } from 'deep-object-diff'
 
 import { Logger } from 'logger'
-const { WARN, LOG, DEBUG, VERBOSE } = Logger.setup(Logger.DEBUG, { performanceEnabled: true }) // eslint-disable-line @typescript-eslint/no-unused-vars
 
-export type BlockWithChildren = BlockEntity & { children: BlockWithChildren[] }
+const { ERROR, WARN, LOG, DEBUG, VERBOSE } = Logger.setup(Logger.DEBUG, { performanceEnabled: true }) // eslint-disable-line @typescript-eslint/no-unused-vars
+
+export interface BlockWithChildren extends /* Omit< */BlockEntity/* , 'children'> */ {
+  children: BlockWithChildren[]
+}
 
 export async function saveBlockRecursively (targetBlock: BlockEntity, blocksDB: BlocksDB) {
-  const ID = targetBlock.uuid
   const currentBlockWithKids = await logseq.Editor
     .getBlock(targetBlock?.uuid, { includeChildren: true }) as BlockWithChildren
   console.log({ currentBlockWithKids })
   const { children } = currentBlockWithKids
 
-  const currentBlockByg = await blocksDB.Blocks.get(ID)
-  const mappedBlockObj: Partial<BlockParams> = { ID, ':db/id': targetBlock.id }
+  const currentBlockByg = await blocksDB.Blocks.get(targetBlock.uuid)
+  const mappedBlockObj: Partial<BlockParams> = { uuid: targetBlock.uuid /*, ':db/id': targetBlock.id */ }
   for (const eachKey of Object.keys(targetBlock)) {
     if (eachKey === 'children' /* || eachKey === 'parent' */) {
       continue
     } else if (eachKey === 'parent' && typeof targetBlock[eachKey] !== 'string') {
-    //   mappedBlockObj[`:block/${eachKey}`] = await logseq.Editor.getBlockProperty(targetBlock[eachKey].id, 'uuid')
+    //   mappedBlockObj[`${eachKey}`] = await logseq.Editor.getBlockProperty(targetBlock[eachKey].id, 'uuid')
       continue
     } else {
-      mappedBlockObj[`:block/${eachKey}`] = targetBlock[eachKey]
+      mappedBlockObj[`${eachKey}`] = targetBlock[eachKey]
     } // HACK Does this mapping make sense?
   }
   if (!currentBlockByg) {
@@ -38,7 +40,7 @@ export async function saveBlockRecursively (targetBlock: BlockEntity, blocksDB: 
     if (Object.keys(updateObj).length) {
       DEBUG('updating with', { updateObj })
 
-      await blocksDB.Blocks.update(ID, updateObj)
+      await blocksDB.Blocks.update(targetBlock.uuid, updateObj)
     }
   }
 
@@ -50,35 +52,40 @@ export async function saveBlockRecursively (targetBlock: BlockEntity, blocksDB: 
   }
 }
 
-export async function loadBlocksAndChildren (targetBlock: BlockEntity, blocks: BlockVM[]) {
-//   const parentIDs = blocks.map(b => b[':block/parent'])
-  const matchingRoots = blocks
-  // .filter(b => b.ID === currentBlock.uuid)
-    // .filter(b => !parentIDs.includes(b.ID))
-    .filter(b => !b[':block/parent'])
-  DEBUG('Found root block matching?:', matchingRoots/* , parentIDs */)
-
-  if (matchingRoots.length) {
-    await logseq.Editor.updateBlock(targetBlock.uuid, matchingRoots[0][':block/content'])
-    await loadBlocksChildrenRecursively(targetBlock, blocks)
+export async function loadBlocksRecursively (currentBlock: BlockWithChildren, blockVMs: BlockVM[], currentVM: BlockVM | undefined = undefined, recursion = 0) {
+  if (recursion > 10) throw new Error('Recursion limit reached')
+  if (!currentVM) {
+    if (recursion !== 0) throw new Error('empty targetVM but inside recursion')
+    currentVM = blockVMs.find(b => b.ID === currentBlock.uuid)
+    if (!currentVM) {
+      const matchingVMs = blockVMs.filter(b => !b.parent) // in bygonz the root nodes don't have a parent
+      if (matchingVMs.length !== 1) { ERROR('Blocks list:', blockVMs); throw new Error(`Failed to determine root block in blocks list (${matchingVMs.length} matches)`) }
+      currentVM = matchingVMs[0]
+    } else { throw new Error(`${recursion === 0 ? 'Root ' : ''}Block ${currentBlock.uuid} has no matching VM`) }
   }
-}
 
-async function loadBlocksChildrenRecursively (targetBlock: Pick<BlockEntity, 'uuid'>, blocks: BlockVM[]) {
-  const children = blocks
-    //   .filter(b => b.ID !== matchingRoots[0].ID)
-    .filter(b => b[':block/parent'] === targetBlock.uuid)
-    .map(b => ({
-      uuid: b[':block/uuid'],
-      content: b[':block/content'],
-      // parent: b[':block/parent'],
-      // children?: Array<BlockEntity | BlockUUIDTuple>;
-    }))
-  const insert = await logseq.Editor.insertBatchBlock(targetBlock.uuid, children, { sibling: false })
-  DEBUG('children inserted:', children, insert)
+  // Update self
+  DEBUG('Updating', currentBlock, '- matching VM:', currentVM, { blockVMs })
+  await logseq.Editor.updateBlock(currentBlock.uuid, currentVM.content)
 
-  for (const child of children) {
-    DEBUG('Recursing into child:', child)
-    await loadBlocksChildrenRecursively(child, blocks)
+  // Find & update children
+  const childVMs = blockVMs
+    .filter(b => b.parent === currentVM!.ID)
+  for (const childVM of childVMs) {
+    let matching: BlockWithChildren | undefined | null = currentBlock.children.find(child => child.uuid === childVM.uuid)
+    DEBUG('Updating child:', matching, 'from', childVM)
+    if (!matching) {
+      // Create it
+      DEBUG('Creating child:', currentBlock.uuid, childVM.content, { sibling: false, customUUID: childVM.uuid /*, properties: { TODO } */ })
+      const newBlock = await logseq.Editor.insertBlock(
+        currentBlock.uuid,
+        childVM.content,
+        { sibling: false, customUUID: childVM.uuid /*, properties: { TODO } */ },
+      )
+      ERROR('empty insert result for', childVM)
+      if (!newBlock) throw new Error('Empty insert result')
+      matching = await logseq.Editor.getBlock(newBlock.uuid, { includeChildren: true }) as BlockWithChildren
+    }
+    await loadBlocksRecursively(matching, blockVMs, childVM, recursion + 1)
   }
 }

@@ -16,7 +16,7 @@ import { detailedDiff } from 'deep-object-diff'
 // import { initIPFS, loadBlockFromIPFS } from './data/ipfs'
 import { Logger } from 'logger'
 import { Buffer } from 'buffer'
-import { BlockWithChildren, loadBlocksAndChildren, saveBlockRecursively } from './data/blocks-to-bygonz'
+import { BlockWithChildren, loadBlocksRecursively, saveBlockRecursively } from './data/blocks-to-bygonz'
 import { flatMapRecursiveChildren } from './utils'
 globalThis.Buffer = Buffer
 
@@ -136,18 +136,18 @@ function main () {
         const currentBlockWithKids = await logseq.Editor
           .getBlock(currentBlock?.uuid, { includeChildren: true }) as BlockWithChildren
 
-        // Delete all children 😈
-        for (const block of flatMapRecursiveChildren(currentBlockWithKids)) {
-          if (block === currentBlockWithKids) continue
-          DEBUG('REMOVING', block)
-          await logseq.Editor.removeBlock(block.uuid)
-        }
+        // // Delete all children 😈
+        // for (const block of flatMapRecursiveChildren(currentBlockWithKids)) {
+        //   if (block === currentBlockWithKids) continue
+        //   DEBUG('REMOVING', block)
+        //   await logseq.Editor.removeBlock(block.uuid)
+        // }
 
         DEBUG('DB:', blocksDB)
         const entitiesResult = await blocksDB.getEntitiesAsOf()
         DEBUG('Blocks:', entitiesResult)
         const newBlocks: BlockVM[] = entitiesResult.entityArray
-        await loadBlocksAndChildren(currentBlock, newBlocks)
+        await loadBlocksRecursively(currentBlockWithKids, newBlocks)
 
         LOG('SYNC done 🎉')
       }
@@ -159,8 +159,8 @@ function main () {
     startTime, durationMins,
   }: any) {
     if (!startTime) return
-    const durationTime = (durationMins || logseq.settings?.pomodoroTimeLength || 25) * 60 // default 20 minus
-    const keepKey = `${logseq.baseInfo.id}--${pomoId}` // -${slotId}
+    // const durationTime = (durationMins || logseq.settings?.pomodoroTimeLength || 25) * 60 // default 20 minus
+    // const keepKey = `${logseq.baseInfo.id}--${pomoId}` // -${slotId}
     // const keepOrNot = () => logseq.App.queryElementById(keepKey)
 
     logseq.provideUI({

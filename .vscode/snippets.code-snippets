@@ -1,7 +1,7 @@
 {
 "logger setup" : {
 	"prefix": "lgp",
-	"body": ["import { Logger } from 'logger'","const { WARN, LOG, DEBUG, VERBOSE } = Logger.setup(Logger.INFO, { performanceEnabled: true }) // eslint-disable-line @typescript-eslint/no-unused-vars"],
+	"body": ["import { Logger } from 'logger'","const { ERROR, WARN, LOG, DEBUG, VERBOSE } = Logger.setup(Logger.INFO, { performanceEnabled: true }) // eslint-disable-line @typescript-eslint/no-unused-vars"],
 	"description": ""
 },
 	// Place your cdn.zt.ax workspace snippets here. Each snippet is defined under a snippet name and has a scope, prefix, body and 

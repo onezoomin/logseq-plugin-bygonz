@@ -2,6 +2,8 @@ import { BlockEntity, LSPluginUserEvents } from '@logseq/libs/dist/LSPlugin.user
 import React from 'react'
 import { BlockWithChildren } from './data/blocks-to-bygonz'
 
+export type Overwrite<T, O> = Omit<T, keyof O> & O
+
 let _visible = logseq.isMainUIVisible
 
 function subscribeLogseqEvent<T extends LSPluginUserEvents> (

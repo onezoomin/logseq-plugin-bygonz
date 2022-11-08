@@ -21,7 +21,8 @@ export type CompoundKeyNumStr = [number, string]
 */
 // BlockParams can be used for a js obj that will be cast to Block or BlockVM
 export interface BlockParams {
-  ID: string // => :block/uuid #uuid
+  // ID: string // => :block/uuid #uuid
+  'uuid': string
 
   creator?: string
   created?: number
@@ -31,38 +32,37 @@ export interface BlockParams {
 
   isDeleted?: boolean
   ':db/id': number
-  ':block/content': string
-  ':block/uuid': string
-  ':block/journal'?: boolean
-  ':block/unordered'?: boolean
-  ':block/left'?: any
-  ':block/refs'?: any
-  ':block/properties-order'?: any
-  ':block/format'?: any
-  ':block/path-refs'?: any
-  ':block/parent'?: any
-  ':block/page'?: any
-  ':block/properties'?: any
-  ':block/properties-text-values'?: Record<string, any>
+  'content': string
+  'journal'?: boolean
+  'unordered'?: boolean
+  'left'?: any
+  'refs'?: any
+  'properties-order'?: any
+  'format'?: any
+  'path-refs'?: any
+  'parent'?: any
+  'page'?: any
+  'properties'?: any
+  'properties-text-values'?: Record<string, any>
 }
 
 export class Block extends Mixin(TimeStampedBase, ModWho) {
-  ID: string // => :block/uuid #uuid
+  // ID: string // => :block/uuid #uuid
+  'uuid': string
   isDeleted?: boolean
   ':db/id': number
-  ':block/content': string
-  ':block/uuid': string
-  ':block/journal'?: boolean
-  ':block/unordered'?: boolean
-  ':block/left'?: any
-  ':block/refs'?: any
-  ':block/properties-order'?: any
-  ':block/format'?: any
-  ':block/path-refs'?: any
-  ':block/parent'?: any
-  ':block/page'?: any
-  ':block/properties'?: any
-  ':block/properties-text-values'?: Record<string, any>
+  'content': string
+  'journal'?: boolean
+  'unordered'?: boolean
+  'left'?: any
+  'refs'?: any
+  'properties-order'?: any
+  'format'?: any
+  'path-refs'?: any
+  'parent'?: any
+  'page'?: any
+  'properties'?: any
+  'properties-text-values'?: Record<string, any>
 
   constructor (obj: BlockParams) {
     super(obj) // all Mixedin supers are called in left to right order
@@ -84,8 +84,7 @@ export class BlockVM extends Mixin(Block, WithHistory) {
     :block/path-refs [{:db/id 19}],
     :block/parent {:db/id 19},
     :block/unordered true, 
-    :block/page {:db/id 19}}
-    `
+    :block/page {:db/id 19}}`
   }
 
   async getBlockHistoryEntries () {
@@ -97,41 +96,41 @@ export class BlockVM extends Mixin(Block, WithHistory) {
   }
 
   async setBlockContent (blockContent: string) {
-    console.log('set', this.ID, blockContent)
+    console.log('set', this.uuid, blockContent)
     const { getInitializedBlocksDB } = await import('./bygonz')
     const blocksDB = await getInitializedBlocksDB()
-    void blocksDB.Blocks.update(this.ID, { ':block/content': blockContent })
+    void blocksDB.Blocks.update(this.uuid, { content: blockContent })
   }
 
   async setDeleted () {
-    console.log('del', this.ID)
+    console.log('del', this.uuid)
     const { getInitializedBlocksDB } = await import('./bygonz')
     const blocksDB = await getInitializedBlocksDB()
-    void blocksDB.Blocks.update(this.ID, { ':block/content': '-deleted-', isDeleted: true })
+    void blocksDB.Blocks.update(this.uuid, { content: '-deleted-' /* HACK for testing */, isDeleted: true })
   }
 }
 
-export const initialBlocks = [
-  new Block({
-    ID: '6362c03c-fd5f-49e5-af3e-7459a1f09b33',
-    ':block/uuid': '6362c03c-fd5f-49e5-af3e-7459a1f09b33',
-    ':db/id': 539,
-    ':block/unordered': true,
-    ':block/parent': {
-      id: 19,
-    },
-    ':block/path-refs': [
-      {
-        id: 19,
-      },
-    ],
-    ':block/content': 'Basic Mock Tree for Sync',
-    ':block/page': {
-      id: 19,
-    },
-    ':block/left': {
-      id: 538,
-    },
-    ':block/format': 'markdown',
-  }),
-]
+// export const initialBlocks = [
+//   new Block({
+//     ID: '6362c03c-fd5f-49e5-af3e-7459a1f09b33',
+//     ':block/uuid': '6362c03c-fd5f-49e5-af3e-7459a1f09b33',
+//     ':db/id': 539,
+//     ':block/unordered': true,
+//     ':block/parent': {
+//       id: 19,
+//     },
+//     ':block/path-refs': [
+//       {
+//         id: 19,
+//       },
+//     ],
+//     ':block/content': 'Basic Mock Tree for Sync',
+//     ':block/page': {
+//       id: 19,
+//     },
+//     ':block/left': {
+//       id: 538,
+//     },
+//     ':block/format': 'markdown',
+//   }),
+// ]
