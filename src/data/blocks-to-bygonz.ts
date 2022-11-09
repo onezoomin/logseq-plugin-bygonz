@@ -29,7 +29,7 @@ export async function _saveBlockRecursively (currentBlock: BlockEntity, blocksDB
     } else if (eachKey === 'parent' && typeof currentBlock[eachKey] !== 'string') {
     //   mappedBlockObj[`${eachKey}`] = await logseq.Editor.getBlockProperty(targetBlock[eachKey].id, 'uuid')
       continue
-    } else if (eachKey === 'parent' && typeof currentBlock[eachKey] !== 'string') {
+    } else if (eachKey === 'content') {
       mappedBlockObj[`${eachKey}`] = currentBlock[eachKey]
         .replaceAll(/\n[^\n]+::[^\n]+/g, '') // HACK removes md props
         .replaceAll(/:PROPERTIES:.+:END:/gis, '').trim() // HACK removes org mode props
