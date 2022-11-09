@@ -17,7 +17,7 @@ import { detailedDiff } from 'deep-object-diff'
 import { Logger } from 'logger'
 import { Buffer } from 'buffer'
 import { BlockWithChildren, loadBlocksRecursively, saveBlockRecursively } from './data/blocks-to-bygonz'
-import { flatMapRecursiveChildren } from './utils'
+// import { flatMapRecursiveChildren } from './utils'
 globalThis.Buffer = Buffer
 
 const { WARN, LOG, DEBUG, VERBOSE } = Logger.setup(Logger.DEBUG, { performanceEnabled: true }) // eslint-disable-line @typescript-eslint/no-unused-vars
@@ -124,6 +124,11 @@ function main () {
       const currentBlock = await logseq.Editor.getCurrentBlock()
       if (currentBlock) {
         await saveBlockRecursively(currentBlock, blocksDB)
+        logseq.DB.onBlockChanged(currentBlock.uuid,
+          (block: BlockEntity, txData: IDatom[], txMeta?: { [key: string]: any, outlinerOp: string } | undefined) => {
+            DEBUG('onBlockChanged:', { block, txData, txMeta })
+          },
+        )
       }
     },
 

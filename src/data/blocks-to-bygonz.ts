@@ -3,6 +3,7 @@ import { BlocksDB } from './bygonz'
 import { BlockParams, BlockVM } from './LogSeqBlock'
 import { detailedDiff } from 'deep-object-diff'
 
+import { debounce } from 'lodash-es'
 import { Logger } from 'logger'
 import { sleep } from 'bygonz'
 
@@ -12,7 +13,9 @@ export interface BlockWithChildren extends /* Omit< */BlockEntity/* , 'children'
   children: BlockWithChildren[]
 }
 
-export async function saveBlockRecursively (currentBlock: BlockEntity, blocksDB: BlocksDB) {
+export const saveBlockRecursively = debounce(_saveBlockRecursively, 5000)
+
+export async function _saveBlockRecursively (currentBlock: BlockEntity, blocksDB: BlocksDB) {
   const currentBlockWithKids = await logseq.Editor
     .getBlock(currentBlock?.uuid, { includeChildren: true }) as BlockWithChildren
   console.log({ currentBlockWithKids })
