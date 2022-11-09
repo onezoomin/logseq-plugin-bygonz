@@ -27,10 +27,12 @@ export async function saveBlockRecursively (currentBlock: BlockEntity, blocksDB:
     //   mappedBlockObj[`${eachKey}`] = await logseq.Editor.getBlockProperty(targetBlock[eachKey].id, 'uuid')
       continue
     } else if (eachKey === 'parent' && typeof currentBlock[eachKey] !== 'string') {
-      mappedBlockObj[`${eachKey}`] = currentBlock[eachKey].replaceAll(/\n[^\n]+::[^\n]+/g, '').trim() // HACK
+      mappedBlockObj[`${eachKey}`] = currentBlock[eachKey]
+        .replaceAll(/\n[^\n]+::[^\n]+/g, '') // HACK removes md props
+        .replaceAll(/:PROPERTIES:.+:END:/gis, '').trim() // HACK removes org mode props
     } else {
       mappedBlockObj[`${eachKey}`] = currentBlock[eachKey]
-    } // HACK Does this mapping make sense?
+    }
   }
 
   // persist UUID - https://github.com/logseq/logseq/issues/4141
@@ -85,7 +87,7 @@ export async function loadBlocksRecursively (
   DEBUG('Updating', currentBlock, '- matching VM:', currentVM, { blockVMs })
   await logseq.Editor.updateBlock(
     currentBlock.uuid,
-    currentVM.content.replaceAll(/\n[^\n]+::[^\n]+/g, '').trim(), // TODO: check if different at all
+    currentVM.content, // TODO: check if different at all
     /* { properties:  currentBlock.properties { foo: 'bar' } } */ // TODO DOESN'T WORK
   )
   await logseq.Editor.upsertBlockProperty(currentBlock.uuid, 'bygonz', currentVM.uuid)
@@ -109,7 +111,7 @@ export async function loadBlocksRecursively (
       DEBUG('Creating child:', currentBlock.uuid, childVM.content/*  { sibling: false/* , customUUID: childVM.uuid * /, properties: { id: childVM.uuid } } */)
       const newBlock = await logseq.Editor.insertBlock(
         currentBlock.uuid,
-        childVM.content.replaceAll(/\n[^\n]+::[^\n]+/g, '').trim(),
+        childVM.content,
         { sibling: false/* , customUUID: childVM.uuid */, properties: { /* id: childVM.uuid, */ bygonz: childVM.uuid } },
       )
       DEBUG('Insert result:', { newBlock })
