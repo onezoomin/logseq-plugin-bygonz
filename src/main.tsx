@@ -49,6 +49,8 @@ async function bygonzReset () {
 }
 async function bygonzSave () {
   const currentBlock = await logseq.Editor.getCurrentBlock()
+  await logseq.Editor.exitEditingMode(true)
+  // await sleep(500) // HACK otherwise root note content might not update
   if (currentBlock) {
     await saveBlockRecursively(currentBlock, blocksDB)
     logseq.DB.onBlockChanged(currentBlock.uuid,
@@ -69,7 +71,7 @@ async function bygonzLoad ({ currentBlock = null, fromBackground = false }: { cu
     if (currentBlock) {
       // user deliberately chose to sync this block - so sync this block. and only this block.
       await logseq.Editor.exitEditingMode(true)
-      await sleep(500)
+      await sleep(500) // HACK otherwise root note content did not update
       await initiateLoadFromBlock(currentBlock, blockVMs)
       await sleep(500)
       await logseq.Editor.editBlock(currentBlock.uuid)
