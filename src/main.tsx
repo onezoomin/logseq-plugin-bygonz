@@ -128,26 +128,45 @@ function main () {
     },
 
     async bygonzLoad () {
-      // LOG('Triggering SYNC') // ? I think this was a brainfart...
-      // await blocksDB.triggerSubscriptionSync()
-
       const currentBlock = await logseq.Editor.getCurrentBlock()
+      // const currentBlock = await logseq.Editor.getBlock('636bdd2e-3817-4eee-9e8f-05e31fa97cae')
+      DEBUG('CURRENT:', currentBlock)
       if (currentBlock) {
-        const currentBlockWithKids = await logseq.Editor
+        const currentBlockWithChildren = await logseq.Editor
           .getBlock(currentBlock?.uuid, { includeChildren: true }) as BlockWithChildren
+        DEBUG('CURRENT w/c:', currentBlockWithChildren)
+
+        // await logseq.Editor.upsertBlockProperty(currentBlock.uuid, 'id', 'f39e6a9e-863b-44d4-9fe9-10c985d100eb')
 
         // // Delete all children 😈
-        // for (const block of flatMapRecursiveChildren(currentBlockWithKids)) {
-        //   if (block === currentBlockWithKids) continue
+        // for (const block of flatMapRecursiveChildren(currentBlockWithChildren)) {
+        //   if (block === currentBlockWithChildren) continue
         //   DEBUG('REMOVING', block)
         //   await logseq.Editor.removeBlock(block.uuid)
         // }
 
+        // for (let i = 0; i < 3; i++) {
+        //   const customUUID = [
+        //     '63f859de-c8ab-4427-983a-9cf64544454e',
+        //     '4bcec3d1-29d0-4cb9-877d-4814276ae5e1',
+        //     'c1628832-34db-40dc-b7c6-3681b94b2b7f',
+        //     '',
+        //     '',
+        //     '',
+        //     '',
+        //   ][i]
+        //   DEBUG('Adding to', currentBlock, 'with', customUUID)
+        //   const result: BlockEntity | null = await logseq.Editor.insertBlock(currentBlock.uuid, `Test ${i}`, { sibling: false, customUUID })
+        //   DEBUG('result:', result)
+        //   if (!result) throw new Error('MEPTY')
+        //   currentBlock = result
+        // }
+
         DEBUG('DB:', blocksDB)
         const entitiesResult = await blocksDB.getEntitiesAsOf()
-        DEBUG('Blocks:', { currentBlockWithKids, entitiesResult })
+        DEBUG('Blocks:', { currentBlockWithChildren, entitiesResult })
         const newBlocks: BlockVM[] = entitiesResult.entityArray
-        await loadBlocksRecursively(currentBlockWithKids, newBlocks)
+        await loadBlocksRecursively(currentBlockWithChildren, newBlocks)
 
         LOG('SYNC done 🎉')
       }
