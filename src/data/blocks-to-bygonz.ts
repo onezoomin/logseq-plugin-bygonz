@@ -26,6 +26,8 @@ export async function saveBlockRecursively (currentBlock: BlockEntity, blocksDB:
     } else if (eachKey === 'parent' && typeof currentBlock[eachKey] !== 'string') {
     //   mappedBlockObj[`${eachKey}`] = await logseq.Editor.getBlockProperty(targetBlock[eachKey].id, 'uuid')
       continue
+    } else if (eachKey === 'parent' && typeof currentBlock[eachKey] !== 'string') {
+      mappedBlockObj[`${eachKey}`] = currentBlock[eachKey].replaceAll(/\n[^\n]+::[^\n]+/g, '').trim() // HACK
     } else {
       mappedBlockObj[`${eachKey}`] = currentBlock[eachKey]
     } // HACK Does this mapping make sense?
@@ -81,31 +83,38 @@ export async function loadBlocksRecursively (
 
   // Update self
   DEBUG('Updating', currentBlock, '- matching VM:', currentVM, { blockVMs })
-  // await logseq.Editor.upsertBlockProperty(currentBlock.uuid, 'content', currentVM.content) // TODO: check if different at all
+  await logseq.Editor.updateBlock(
+    currentBlock.uuid,
+    currentVM.content.replaceAll(/\n[^\n]+::[^\n]+/g, '').trim(), // TODO: check if different at all
+    /* { properties:  currentBlock.properties { foo: 'bar' } } */ // TODO DOESN'T WORK
+  )
+  await logseq.Editor.upsertBlockProperty(currentBlock.uuid, 'bygonz', currentVM.uuid)
+
   // TODO ... oh and also all the other props
-  // await sleep(500)
+  // await sleep(1000)
 
   // Find & update children
   const childVMs = blockVMs
     .filter(b => b.parent === currentVM!.uuid)
   for (const childVM of childVMs) {
+    DEBUG('Updating childVM', childVM)
     const matching: BlockWithChildren | undefined | null = currentBlock.children
       .find(child => (
         child.uuid === childVM.uuid ||
         child.properties?.bygonz === childVM.uuid
       ))
-    DEBUG('Updating child:', matching, 'from', childVM)
+    DEBUG('Matching child?', matching)
     if (!matching) {
       // Create it
       DEBUG('Creating child:', currentBlock.uuid, childVM.content/*  { sibling: false/* , customUUID: childVM.uuid * /, properties: { id: childVM.uuid } } */)
       const newBlock = await logseq.Editor.insertBlock(
         currentBlock.uuid,
-        childVM.content,
+        childVM.content.replaceAll(/\n[^\n]+::[^\n]+/g, '').trim(),
         { sibling: false/* , customUUID: childVM.uuid */, properties: { /* id: childVM.uuid, */ bygonz: childVM.uuid } },
       )
       DEBUG('Insert result:', { newBlock })
-      await sleep(500)
       if (!newBlock) { ERROR('empty insert result for', { childVM }); throw new Error('Empty insert result') }
+      // await sleep(1000)
 
       // DEBUG('Pinning UUID:', childVM.uuid, 'on', newBlock)
       // await logseq.Editor.upsertBlockProperty(newBlock.uuid, 'bygonz', childVM.uuid)
