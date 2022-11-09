@@ -76,21 +76,19 @@ export async function _saveBlockRecursively (currentBlock: BlockEntity, blocksDB
 
 export async function initiateLoadFromBlock (block: BlockEntity, blockVMs: BlockVM[]) {
   DEBUG('Initiating load from:', block)
-  if (block) {
-    const blockWithChildren = await logseq.Editor
-      .getBlock(block?.uuid, { includeChildren: true }) as BlockWithChildren
-    DEBUG('CURRENT w/c:', blockWithChildren)
+  const blockWithChildren = await logseq.Editor
+    .getBlock(block?.uuid, { includeChildren: true }) as BlockWithChildren
+  DEBUG('CURRENT w/c:', blockWithChildren)
 
-    await loadBlocksRecursively(blockWithChildren, blockVMs)
+  await loadBlocksRecursively(blockWithChildren, blockVMs)
 
-    // await logseq.Editor.upsertBlockProperty(currentBlock.uuid, 'id', 'f39e6a9e-863b-44d4-9fe9-10c985d100eb')
-    // // Delete all children 😈
-    // for (const block of flatMapRecursiveChildren(currentBlockWithChildren)) {
-    //   if (block === currentBlockWithChildren) continue
-    //   DEBUG('REMOVING', block)
-    //   await logseq.Editor.removeBlock(block.uuid)
-    // }
-  }
+  // await logseq.Editor.upsertBlockProperty(currentBlock.uuid, 'id', 'f39e6a9e-863b-44d4-9fe9-10c985d100eb')
+  // // Delete all children 😈
+  // for (const block of flatMapRecursiveChildren(currentBlockWithChildren)) {
+  //   if (block === currentBlockWithChildren) continue
+  //   DEBUG('REMOVING', block)
+  //   await logseq.Editor.removeBlock(block.uuid)
+  // }
 }
 
 export async function loadBlocksRecursively (
@@ -104,13 +102,11 @@ export async function loadBlocksRecursively (
   if (!currentVM) {
     VERBOSE('no vm passed', { currentBlock, blockVMs })
     if (recursion !== 0) throw new Error('empty targetVM but inside recursion')
-    currentVM = blockVMs.find(b => b.uuid === currentBlock.uuid)
-    if (!currentVM) {
-      VERBOSE('still no vm found')
-      const matchingVMs = blockVMs.filter(b => !b.parent) // in bygonz the root nodes don't have a parent
-      if (matchingVMs.length !== 1) { ERROR('Blocks list:', blockVMs); throw new Error(`Failed to determine root block in blocks list (${matchingVMs.length} matches)`) }
-      currentVM = matchingVMs[0]
-    }
+    currentVM = blockVMs.find(b => (
+      b.uuid === currentBlock.uuid ||
+      b.uuid === currentBlock.properties?.bygonz
+    ))
+    if (!currentVM) throw new Error('still no vm found') // TODO:  show alert
   }
 
   // Update self

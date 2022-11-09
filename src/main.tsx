@@ -65,14 +65,19 @@ async function bygonzLoad ({ currentBlock = null, fromBackground = false }: { cu
 
   if (!currentBlock && !fromBackground) {
     currentBlock = await logseq.Editor.getCurrentBlock()
+    DEBUG('Initiated from Button - current block?', currentBlock)
     if (currentBlock) {
       // user deliberately chose to sync this block - so sync this block. and only this block.
+      await logseq.Editor.exitEditingMode(true)
+      await sleep(500)
       await initiateLoadFromBlock(currentBlock, blockVMs)
       await sleep(500)
       await logseq.Editor.editBlock(currentBlock.uuid)
       return
     }
   }
+
+  // TODO: check if currently editing the nodes we're updating
 
   // Try to find the BlockVM roots in LogSeq tree
   const rootVMs = blockVMs.filter(b => !b.parent) // in bygonz the root nodes don't have a parent
