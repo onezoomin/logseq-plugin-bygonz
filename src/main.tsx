@@ -20,7 +20,7 @@ import { BlockWithChildren, loadBlocksRecursively, saveBlockRecursively } from '
 // import { flatMapRecursiveChildren } from './utils'
 globalThis.Buffer = Buffer
 
-const { WARN, LOG, DEBUG, VERBOSE } = Logger.setup(Logger.DEBUG, { performanceEnabled: true }) // eslint-disable-line @typescript-eslint/no-unused-vars
+const { ERROR, WARN, LOG, DEBUG, VERBOSE } = Logger.setup(Logger.DEBUG, { performanceEnabled: true }) // eslint-disable-line @typescript-eslint/no-unused-vars
 
 const settings: SettingSchemaDesc[] = [
   {
@@ -36,6 +36,87 @@ const css = (t, ...args) => String.raw(t, ...args)
 
 const pluginId = PL.id
 let blocksDB: BlocksDB
+
+async function bygonzReset () {
+  await indexedDB.deleteDatabase('BygonzBlocks')
+  await indexedDB.deleteDatabase('BygonzLogDB_BygonzBlocks')
+  await indexedDB.deleteDatabase('bygonz_ipfs_persist')
+  // window.parent.location.reload()
+  // await logseq.App.relaunch()
+  WARN('reload please 💁')
+}
+async function bygonzSave () {
+  const currentBlock = await logseq.Editor.getCurrentBlock()
+  if (currentBlock) {
+    await saveBlockRecursively(currentBlock, blocksDB)
+    logseq.DB.onBlockChanged(currentBlock.uuid,
+      (block: BlockEntity, txData: IDatom[], txMeta?: { [key: string]: any, outlinerOp: string } | undefined) => {
+        DEBUG('onBlockChanged:', { block, txData, txMeta })
+      },
+    )
+  }
+}
+
+async function bygonzLoad ({ fromBackground }) {
+  DEBUG('DB:', blocksDB)
+  const entitiesResult = await blocksDB.getEntitiesAsOf()
+  DEBUG('BlocksDB entities:', { entitiesResult })
+  const blockVMs: BlockVM[] = entitiesResult.entityArray
+
+  let currentBlock: BlockEntity | null
+  if (!fromBackground) {
+    currentBlock = await logseq.Editor.getCurrentBlock()
+  }
+
+  // Try to find the BlockVM root in LogSeq tree
+  const rootVMs = blockVMs.filter(b => !b.parent) // in bygonz the root nodes don't have a parent
+  // if (rootVMs.length !== 1) { ERROR('Blocks list:', blockVMs); throw new Error(`Failed to determine root block in blocks list (${rootVMs.length} matches)`) }
+  for (const root of rootVMs) {
+    const block = await logseq.Editor.getBlock(root.uuid)
+    if (!block) {
+      ERROR(`didn't find bygonz root block in local LogSeq: ${root.uuid}`)
+      continue
+    }
+    currentBlock = block
+
+    DEBUG('CURRENT:', currentBlock)
+    if (currentBlock) {
+      const currentBlockWithChildren = await logseq.Editor
+        .getBlock(currentBlock?.uuid, { includeChildren: true }) as BlockWithChildren
+      DEBUG('CURRENT w/c:', currentBlockWithChildren)
+
+      // await logseq.Editor.upsertBlockProperty(currentBlock.uuid, 'id', 'f39e6a9e-863b-44d4-9fe9-10c985d100eb')
+
+      // // Delete all children 😈
+      // for (const block of flatMapRecursiveChildren(currentBlockWithChildren)) {
+      //   if (block === currentBlockWithChildren) continue
+      //   DEBUG('REMOVING', block)
+      //   await logseq.Editor.removeBlock(block.uuid)
+      // }
+
+      // for (let i = 0; i < 3; i++) {
+      //   const customUUID = [
+      //     '63f859de-c8ab-4427-983a-9cf64544454e',
+      //     '4bcec3d1-29d0-4cb9-877d-4814276ae5e1',
+      //     'c1628832-34db-40dc-b7c6-3681b94b2b7f',
+      //     '',
+      //     '',
+      //     '',
+      //     '',
+      //   ][i]
+      //   DEBUG('Adding to', currentBlock, 'with', customUUID)
+      //   const result: BlockEntity | null = await logseq.Editor.insertBlock(currentBlock.uuid, `Test ${i}`, { sibling: false, customUUID })
+      //   DEBUG('result:', result)
+      //   if (!result) throw new Error('MEPTY')
+      //   currentBlock = result
+      // }
+
+      await loadBlocksRecursively(currentBlockWithChildren, blockVMs)
+
+      LOG('SYNC done 🎉')
+    }
+  }
+}
 
 function main () {
   console.info(`#${pluginId}: MAIN`)
@@ -111,71 +192,9 @@ function main () {
       await logseq.Editor.updateBlock(blockUuid, newContent)
       renderTimer({ pomoId, slotId, startTime })
     },
-
-    async bygonzReset () {
-      await indexedDB.deleteDatabase('BygonzBlocks')
-      await indexedDB.deleteDatabase('BygonzLogDB_BygonzBlocks')
-      await indexedDB.deleteDatabase('bygonz_ipfs_persist')
-      // window.parent.location.reload()
-      // await logseq.App.relaunch()
-      WARN('reload please 💁')
-    },
-    async bygonzSave () {
-      const currentBlock = await logseq.Editor.getCurrentBlock()
-      if (currentBlock) {
-        await saveBlockRecursively(currentBlock, blocksDB)
-        logseq.DB.onBlockChanged(currentBlock.uuid,
-          (block: BlockEntity, txData: IDatom[], txMeta?: { [key: string]: any, outlinerOp: string } | undefined) => {
-            DEBUG('onBlockChanged:', { block, txData, txMeta })
-          },
-        )
-      }
-    },
-
-    async bygonzLoad () {
-      const currentBlock = await logseq.Editor.getCurrentBlock()
-      // const currentBlock = await logseq.Editor.getBlock('636bdd2e-3817-4eee-9e8f-05e31fa97cae')
-      DEBUG('CURRENT:', currentBlock)
-      if (currentBlock) {
-        const currentBlockWithChildren = await logseq.Editor
-          .getBlock(currentBlock?.uuid, { includeChildren: true }) as BlockWithChildren
-        DEBUG('CURRENT w/c:', currentBlockWithChildren)
-
-        // await logseq.Editor.upsertBlockProperty(currentBlock.uuid, 'id', 'f39e6a9e-863b-44d4-9fe9-10c985d100eb')
-
-        // // Delete all children 😈
-        // for (const block of flatMapRecursiveChildren(currentBlockWithChildren)) {
-        //   if (block === currentBlockWithChildren) continue
-        //   DEBUG('REMOVING', block)
-        //   await logseq.Editor.removeBlock(block.uuid)
-        // }
-
-        // for (let i = 0; i < 3; i++) {
-        //   const customUUID = [
-        //     '63f859de-c8ab-4427-983a-9cf64544454e',
-        //     '4bcec3d1-29d0-4cb9-877d-4814276ae5e1',
-        //     'c1628832-34db-40dc-b7c6-3681b94b2b7f',
-        //     '',
-        //     '',
-        //     '',
-        //     '',
-        //   ][i]
-        //   DEBUG('Adding to', currentBlock, 'with', customUUID)
-        //   const result: BlockEntity | null = await logseq.Editor.insertBlock(currentBlock.uuid, `Test ${i}`, { sibling: false, customUUID })
-        //   DEBUG('result:', result)
-        //   if (!result) throw new Error('MEPTY')
-        //   currentBlock = result
-        // }
-
-        DEBUG('DB:', blocksDB)
-        const entitiesResult = await blocksDB.getEntitiesAsOf()
-        DEBUG('Blocks:', { currentBlockWithChildren, entitiesResult })
-        const newBlocks: BlockVM[] = entitiesResult.entityArray
-        await loadBlocksRecursively(currentBlockWithChildren, newBlocks)
-
-        LOG('SYNC done 🎉')
-      }
-    },
+    bygonzReset,
+    bygonzLoad,
+    bygonzSave,
   })
 
   function renderTimer ({
@@ -250,6 +269,9 @@ function main () {
     // initIPFS().catch(e => console.error('IPFS init failure', e))
     ((async () => {
       blocksDB = await getInitializedBlocksDB()
+      blocksDB.addUpdateListener(async () => {
+        bygonzLoad({ fromBackground: true })
+      })
     })()).catch(e => console.error('bygonz init failure', e))
   })
 }
