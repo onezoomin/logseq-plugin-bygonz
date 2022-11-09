@@ -13,7 +13,7 @@ export interface BlockWithChildren extends /* Omit< */BlockEntity/* , 'children'
   children: BlockWithChildren[]
 }
 
-export const saveBlockRecursively = debounce(_saveBlockRecursively, 5000)
+export const saveBlockRecursively = debounce(_saveBlockRecursively, 1000)
 
 export async function _saveBlockRecursively (currentBlock: BlockEntity, blocksDB: BlocksDB) {
   const currentBlockWithKids = await logseq.Editor
@@ -63,7 +63,7 @@ export async function _saveBlockRecursively (currentBlock: BlockEntity, blocksDB
     DEBUG('Recursing into child:', child)
     // @ts-expect-error
     child.parent = currentBlock.uuid
-    await saveBlockRecursively(child, blocksDB)
+    await _saveBlockRecursively(child, blocksDB)
   }
 }
 
@@ -72,6 +72,7 @@ export async function loadBlocksRecursively (
   blockVMs: BlockVM[],
   currentVM: BlockVM | undefined = undefined,
   recursion = 0,
+  rootBlockUUID = currentBlock.uuid,
 ) {
   if (recursion > 10) throw new Error('Recursion limit reached')
   if (!currentVM) {
@@ -135,9 +136,11 @@ export async function loadBlocksRecursively (
       //   matching = { ...newBlock, uuid: newBlock.uuid, children: [] } as BlockWithChildren
       // } else DEBUG('insert->getBlock result:', matching)
 
-      await loadBlocksRecursively({ ...newBlock, children: [] }, blockVMs, childVM, recursion + 1)
+      await loadBlocksRecursively({ ...newBlock, children: [] }, blockVMs, childVM, recursion + 1, rootBlockUUID)
     } else {
-      await loadBlocksRecursively(matching, blockVMs, childVM, recursion + 1)
+      await loadBlocksRecursively(matching, blockVMs, childVM, recursion + 1, rootBlockUUID)
     }
   }
+  await sleep(500)
+  await logseq.Editor.editBlock(rootBlockUUID)
 }
