@@ -16,7 +16,9 @@ import { detailedDiff } from 'deep-object-diff'
 // import { initIPFS, loadBlockFromIPFS } from './data/ipfs'
 import { Logger } from 'logger'
 import { Buffer } from 'buffer'
-import { BlockWithChildren, loadBlocksRecursively, saveBlockRecursively } from './data/blocks-to-bygonz'
+import { initiateLoadFromBlock, saveBlockRecursively } from './data/blocks-to-bygonz'
+import { sleep } from 'bygonz'
+
 // import { flatMapRecursiveChildren } from './utils'
 globalThis.Buffer = Buffer
 
@@ -57,65 +59,53 @@ async function bygonzSave () {
   }
 }
 
-async function bygonzLoad ({ fromBackground }) {
+async function bygonzLoad ({ currentBlock = null, fromBackground = false }: { currentBlock?: BlockEntity | null, fromBackground?: boolean }) {
+  LOG('SYNC init 🎉')
+  const blockVMs: BlockVM[] = await getAllBlockVMs()
+
+  if (!currentBlock && !fromBackground) {
+    currentBlock = await logseq.Editor.getCurrentBlock()
+    if (currentBlock) {
+      // user deliberately chose to sync this block - so sync this block. and only this block.
+      await initiateLoadFromBlock(currentBlock, blockVMs)
+      await sleep(500)
+      await logseq.Editor.editBlock(currentBlock.uuid)
+      return
+    }
+  }
+
+  // Try to find the BlockVM roots in LogSeq tree
+  const rootVMs = blockVMs.filter(b => !b.parent) // in bygonz the root nodes don't have a parent
+  // if (rootVMs.length !== 1) { ERROR('Blocks list:', blockVMs); throw new Error(`Failed to determine root block in blocks list (${rootVMs.length} matches)`) }
+  for (const root of rootVMs) {
+    LOG('Checking if root exists in our LogSeq:', root.uuid)
+    let block = await logseq.Editor.getBlock(root.uuid)
+    if (!block) {
+      const resultUuid = await logseq.DB.datascriptQuery(`
+        [:find (pull ?b [:block/uuid])
+          :where
+          [?b :block/properties ?prop]
+          [(get ?prop :bygonz) ?v]
+          [(= ?v "${root.uuid}")]
+      ]`)
+      DEBUG('QUERY RESULT', resultUuid)
+      block = await logseq.Editor.getBlock(resultUuid[0][0].uuid)
+    }
+    if (!block) {
+      WARN(`didn't find bygonz root block in local LogSeq: ${root.uuid}`)
+      continue
+    }
+    await initiateLoadFromBlock(block, blockVMs)
+  }
+  LOG('SYNC done 🎉')
+}
+
+async function getAllBlockVMs () {
   DEBUG('DB:', blocksDB)
   const entitiesResult = await blocksDB.getEntitiesAsOf()
   DEBUG('BlocksDB entities:', { entitiesResult })
   const blockVMs: BlockVM[] = entitiesResult.entityArray
-
-  let currentBlock: BlockEntity | null
-  if (!fromBackground) {
-    currentBlock = await logseq.Editor.getCurrentBlock()
-  }
-
-  // Try to find the BlockVM root in LogSeq tree
-  const rootVMs = blockVMs.filter(b => !b.parent) // in bygonz the root nodes don't have a parent
-  // if (rootVMs.length !== 1) { ERROR('Blocks list:', blockVMs); throw new Error(`Failed to determine root block in blocks list (${rootVMs.length} matches)`) }
-  for (const root of rootVMs) {
-    const block = await logseq.Editor.getBlock(root.uuid)
-    if (!block) {
-      ERROR(`didn't find bygonz root block in local LogSeq: ${root.uuid}`)
-      continue
-    }
-    currentBlock = block
-
-    DEBUG('CURRENT:', currentBlock)
-    if (currentBlock) {
-      const currentBlockWithChildren = await logseq.Editor
-        .getBlock(currentBlock?.uuid, { includeChildren: true }) as BlockWithChildren
-      DEBUG('CURRENT w/c:', currentBlockWithChildren)
-
-      // await logseq.Editor.upsertBlockProperty(currentBlock.uuid, 'id', 'f39e6a9e-863b-44d4-9fe9-10c985d100eb')
-
-      // // Delete all children 😈
-      // for (const block of flatMapRecursiveChildren(currentBlockWithChildren)) {
-      //   if (block === currentBlockWithChildren) continue
-      //   DEBUG('REMOVING', block)
-      //   await logseq.Editor.removeBlock(block.uuid)
-      // }
-
-      // for (let i = 0; i < 3; i++) {
-      //   const customUUID = [
-      //     '63f859de-c8ab-4427-983a-9cf64544454e',
-      //     '4bcec3d1-29d0-4cb9-877d-4814276ae5e1',
-      //     'c1628832-34db-40dc-b7c6-3681b94b2b7f',
-      //     '',
-      //     '',
-      //     '',
-      //     '',
-      //   ][i]
-      //   DEBUG('Adding to', currentBlock, 'with', customUUID)
-      //   const result: BlockEntity | null = await logseq.Editor.insertBlock(currentBlock.uuid, `Test ${i}`, { sibling: false, customUUID })
-      //   DEBUG('result:', result)
-      //   if (!result) throw new Error('MEPTY')
-      //   currentBlock = result
-      // }
-
-      await loadBlocksRecursively(currentBlockWithChildren, blockVMs)
-
-      LOG('SYNC done 🎉')
-    }
-  }
+  return blockVMs
 }
 
 function main () {
@@ -163,12 +153,19 @@ function main () {
     }
   `)
 
-  logseq.Editor.registerSlashCommand('ipfs', async (e) => {
-    const maybeCid = (await logseq.Editor.getEditingBlockContent()).trim()
+  logseq.Editor.registerSlashCommand('bygonz', async (event) => {
+    DEBUG('[ /bygonz ] called', event)
+    const maybeUuid = (await logseq.Editor.getEditingBlockContent()).trim()
+    const blockVMs: BlockVM[] = await getAllBlockVMs()
+    const matchingVM = blockVMs.find(vm => vm.uuid === maybeUuid)
+    if (!matchingVM) throw new Error('Slash ID not found in BlocksDB') // TODO: show message
     const currentBlock = await logseq.Editor.getCurrentBlock()
-    console.log('slash command', e, { maybeCid, currentBlock })
-    if (!currentBlock) throw new Error('no current block')
-    throw new Error('TODO')
+    if (!currentBlock) throw new Error('Slash command but no current block?!') // HACK: use event->block
+    DEBUG('[ /bygonz ] gathered facts', maybeUuid, { matchingVM, currentBlock, blockVMs })
+
+    DEBUG('Pinning bygonz ID', matchingVM.uuid)
+    await logseq.Editor.upsertBlockProperty(currentBlock.uuid, 'bygonz', matchingVM.uuid)
+    await bygonzLoad({ currentBlock })
 
     // const targetBlock = await logseq.Editor.insertBlock(targetBlock.uuid, '🚀 Fetching ...', { before: true })
     // if (!targetBlock) throw new Error('Insert result is null')
@@ -270,7 +267,7 @@ function main () {
     ((async () => {
       blocksDB = await getInitializedBlocksDB()
       blocksDB.addUpdateListener(async () => {
-        bygonzLoad({ fromBackground: true })
+        await bygonzLoad({ fromBackground: true })
       })
     })()).catch(e => console.error('bygonz init failure', e))
   })

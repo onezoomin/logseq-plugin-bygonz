@@ -21,17 +21,21 @@ export async function _saveBlockRecursively (currentBlock: BlockEntity, blocksDB
   console.log({ currentBlockWithKids })
   const { children } = currentBlockWithKids
 
-  const currentBlockByg = await blocksDB.Blocks.get(currentBlock.uuid)
-  const mappedBlockObj: Partial<BlockParams> = { uuid: currentBlock.uuid /*, ':db/id': targetBlock.id */ }
+  let bygonzID = currentBlock.uuid
+  if (currentBlock.properties?.bygonz) {
+    DEBUG('Using bygonz override UUID:', { currentBlock })
+    bygonzID = currentBlock.properties.bygonz
+  }
+  const currentBlockByg = await blocksDB.Blocks.get(bygonzID)
+  const mappedBlockObj: Partial<BlockParams> = { uuid: bygonzID /*, ':db/id': targetBlock.id */ }
   for (const eachKey of Object.keys(currentBlock)) {
-    if (eachKey === 'children' /* || eachKey === 'parent' */) {
+    if (eachKey === 'children' || eachKey === 'uuid') {
       continue
-    } else if (eachKey === 'parent' && typeof currentBlock[eachKey] !== 'string') {
-    //   mappedBlockObj[`${eachKey}`] = await logseq.Editor.getBlockProperty(targetBlock[eachKey].id, 'uuid')
+    } else if (
+      eachKey === 'parent' && // we actually set parent in the for (child of children), because here we only have the :db/id, and this way we save ourselves a lookup
+        typeof currentBlock[eachKey] !== 'string' // from logseq, it's an object, when we set it, it's a string
+    ) {
       continue
-    } else if (eachKey === 'uuid' && currentBlock.properties?.bygonz) {
-      DEBUG('Using bygonz override UUID:', { currentBlock })
-      mappedBlockObj[`${eachKey}`] = currentBlock.properties.bygonz
     } else if (eachKey === 'content') {
       mappedBlockObj[`${eachKey}`] = currentBlock[eachKey]
         .replaceAll(/\n[^\n]+::[^\n]+/g, '') // HACK removes md props
@@ -42,7 +46,7 @@ export async function _saveBlockRecursively (currentBlock: BlockEntity, blocksDB
   }
 
   // persist UUID - https://github.com/logseq/logseq/issues/4141
-  if (!currentBlock.properties?.id) {
+  if (!currentBlock.properties?.id && !currentBlock.properties?.bygonz) {
     DEBUG('Pinning UUID:', currentBlock)
     await logseq.Editor.upsertBlockProperty(currentBlock.uuid, 'id', currentBlock.uuid)
   }
@@ -58,15 +62,34 @@ export async function _saveBlockRecursively (currentBlock: BlockEntity, blocksDB
     if (Object.keys(updateObj).length) {
       DEBUG('updating with', { updateObj })
 
-      await blocksDB.Blocks.update(currentBlock.uuid, updateObj)
+      await blocksDB.Blocks.update(bygonzID, updateObj)
     }
   }
 
   for (const child of children) {
     DEBUG('Recursing into child:', child)
     // @ts-expect-error
-    child.parent = currentBlock.uuid
+    child.parent = bygonzID // we map parent-child relationship with possibly different set of IDs
     await _saveBlockRecursively(child, blocksDB)
+  }
+}
+
+export async function initiateLoadFromBlock (block: BlockEntity, blockVMs: BlockVM[]) {
+  DEBUG('Initiating load from:', block)
+  if (block) {
+    const blockWithChildren = await logseq.Editor
+      .getBlock(block?.uuid, { includeChildren: true }) as BlockWithChildren
+    DEBUG('CURRENT w/c:', blockWithChildren)
+
+    await loadBlocksRecursively(blockWithChildren, blockVMs)
+
+    // await logseq.Editor.upsertBlockProperty(currentBlock.uuid, 'id', 'f39e6a9e-863b-44d4-9fe9-10c985d100eb')
+    // // Delete all children 😈
+    // for (const block of flatMapRecursiveChildren(currentBlockWithChildren)) {
+    //   if (block === currentBlockWithChildren) continue
+    //   DEBUG('REMOVING', block)
+    //   await logseq.Editor.removeBlock(block.uuid)
+    // }
   }
 }
 
@@ -119,6 +142,7 @@ export async function loadBlocksRecursively (
       const newBlock = await logseq.Editor.insertBlock(
         currentBlock.uuid,
         childVM.content,
+        // 'parent': we don't need to set it because we're already putting it in the right place
         { sibling: false/* , customUUID: childVM.uuid */, properties: { /* id: childVM.uuid, */ bygonz: childVM.uuid } },
       )
       DEBUG('Insert result:', { newBlock })
@@ -144,6 +168,4 @@ export async function loadBlocksRecursively (
       await loadBlocksRecursively(matching, blockVMs, childVM, recursion + 1, rootBlockUUID)
     }
   }
-  await sleep(500)
-  await logseq.Editor.editBlock(rootBlockUUID)
 }
