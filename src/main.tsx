@@ -16,8 +16,11 @@ import { detailedDiff } from 'deep-object-diff'
 // import { initIPFS, loadBlockFromIPFS } from './data/ipfs'
 import { Logger } from 'logger'
 import { Buffer } from 'buffer'
+import { partition } from 'lodash-es'
 import { initiateLoadFromBlock, saveBlockRecursively } from './data/blocks-to-bygonz'
 import { sleep } from 'bygonz'
+
+type ChangeEvent = Parameters<Parameters<typeof logseq.DB.onChanged>[0]>[0]
 
 // import { flatMapRecursiveChildren } from './utils'
 globalThis.Buffer = Buffer
@@ -39,6 +42,11 @@ const css = (t, ...args) => String.raw(t, ...args)
 const pluginId = PL.id
 let blocksDB: BlocksDB
 
+const toggles = {
+  realtime: true,
+  changeListener: false,
+}
+
 async function bygonzReset () {
   await indexedDB.deleteDatabase('BygonzBlocks')
   await indexedDB.deleteDatabase('BygonzLogDB_BygonzBlocks')
@@ -47,16 +55,16 @@ async function bygonzReset () {
   // await logseq.App.relaunch()
   WARN('reload please 💁')
 }
+
 async function bygonzSave () {
   const currentBlock = await logseq.Editor.getCurrentBlock()
   await logseq.Editor.exitEditingMode(true)
   // await sleep(500) // HACK otherwise root note content might not update
   if (currentBlock) {
     saveBlockRecursively(currentBlock, blocksDB)
-    ERROR('REGISTER ONBLC:')
     logseq.DB.onBlockChanged(currentBlock.uuid,
       (block: BlockEntity, txData: IDatom[], txMeta?: { [key: string]: any, outlinerOp: string } | undefined) => {
-        ERROR('onBlockChanged:', { block, txData, txMeta })
+        DEBUG('onBlockChanged:', { block, txData, txMeta })
         saveBlockRecursively(block, blocksDB)
       },
     )
@@ -117,6 +125,20 @@ async function getAllBlockVMs () {
   return blockVMs
 }
 
+async function onDBChange (event: ChangeEvent) {
+  const { blocks, txData, txMeta } = event
+  DEBUG('[DB] change:', txMeta?.outlinerOp, event)
+
+  if (txMeta?.outlinerOp === 'saveBlock') {
+    const contentChanges = txData?.filter(atom => atom[1] === 'content')
+    if (contentChanges?.length) {
+      const [after, before] = partition(contentChanges, '[4]') // partition by op (if false, it's the retraction)
+        .map(list => list.map(atom => atom[2])) // get the value
+      DEBUG('[DB.saveBlock] content:', [before, after])
+    }
+  }
+}
+
 function main () {
   console.info(`#${pluginId}: MAIN`)
   logseq.useSettingsSchema(settings)
@@ -141,26 +163,6 @@ function main () {
   logseq.setMainUIInlineStyle({
     zIndex: 11,
   })
-
-  const openIconName = 'template-plugin-open'
-
-  logseq.provideStyle(css`
-    .${openIconName} {
-      opacity: 0.55;
-      font-size: 20px;
-      margin-top: 4px;
-    }
-
-    .${openIconName}:hover {
-      opacity: 0.9;
-    }
-
-    .tag {
-      border: 1px dotted purple;
-      border-radius: 12px;
-      padding-x: 4px;
-    }
-  `)
 
   logseq.Editor.registerSlashCommand('bygonz', async (event) => {
     DEBUG('[ /bygonz ] called', event)
@@ -265,10 +267,68 @@ function main () {
   })
 
   logseq.App.registerUIItem('toolbar', {
-    key: openIconName,
-    template: `
-      <div data-on-click="show" class="${openIconName}">⚙️ Bygonz</div>
-    `,
+    key: 'pomodoro_timer', template: `
+    <div><p style="font-size: large; opacity: 50%;" class="button">XXX</p></div>`,
+  })
+
+  const togglesBaseClass = 'bygonz-toggles'
+  const renderToolbarItems = () => {
+    DEBUG('Rendering toolbar items')
+    logseq.App.registerUIItem('toolbar', {
+      key: 'template-plugin-open',
+      template: `
+        <div data-on-click="onToolbarClick" data-toggles="realtime" class="${togglesBaseClass} ${toggles.realtime ? 'bg-green-100' : ''}">Realtime</div>
+      `,
+    })
+  }
+  logseq.provideModel({
+    onToolbarClick: (event) => {
+      console.log('toolbar click', event, { toggles })
+      const toggle = event.dataset.toggles
+      toggles[toggle] = !toggles[toggle]
+      if (toggle === 'realtime') {
+        if (toggles[toggle]) {
+          LOG('Enabling realtime listener')
+          // logseq.DB.onChanged((event) => {
+          //   VERBOSE('onChange listener', event)
+          //   if (!toggles[toggle]) return
+          //   void onDBChange(event).catch(err => ERROR('onDBChange error', err))
+          // })
+        } else {
+          LOG('Disabling realtime listener')
+          // don't know how to disable, so we just check in the listener above
+        }
+      }
+      renderToolbarItems()
+    },
+  })
+  logseq.provideStyle(css`
+    .${togglesBaseClass} {
+      opacity: 0.55;
+      font-size: 30%;
+      /* margin-top: 4px; */
+      border: 1px solid #ccc;
+      padding: 5px 7px;
+      border-radius: 5px;
+      margin-top: 5px;
+    }
+
+    .${togglesBaseClass}:hover {
+      opacity: 0.9;
+    }
+
+    .tag {
+      border: 1px dotted purple;
+      border-radius: 12px;
+      padding-x: 4px;
+    }
+  `)
+  renderToolbarItems()
+
+  logseq.DB.onChanged((event) => {
+    VERBOSE('onChange listener', event)
+    if (!toggles.realtime) return
+    void onDBChange(event).catch(err => ERROR('onDBChange error', err))
   })
 
   setTimeout(() => {

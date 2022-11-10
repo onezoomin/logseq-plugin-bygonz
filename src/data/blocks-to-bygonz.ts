@@ -3,7 +3,7 @@ import { BlocksDB } from './bygonz'
 import { BlockParams, BlockVM } from './LogSeqBlock'
 import { detailedDiff } from 'deep-object-diff'
 
-import { debounce } from 'lodash-es'
+import { debounce, remove } from 'lodash-es'
 import { Logger } from 'logger'
 import { sleep } from 'bygonz'
 
@@ -30,6 +30,8 @@ export async function _saveBlockRecursively (currentBlock: BlockEntity, blocksDB
   let bygonzID = currentBlock.uuid
   if (currentBlock.properties?.bygonz) {
     DEBUG('Using bygonz override UUID:', { currentBlock })
+    // HACK workaround for https://github.com/logseq/logseq/issues/7283
+    // TODO: if this were to become a serious implementation necessity, we'd also need to map e.g. references in the content
     bygonzID = currentBlock.properties.bygonz
   }
   const currentBlockByg = await blocksDB.Blocks.get(bygonzID)
@@ -72,11 +74,18 @@ export async function _saveBlockRecursively (currentBlock: BlockEntity, blocksDB
     }
   }
 
+  const unseenVMChildren = await (await blocksDB.Blocks.filter(b => b.parent === bygonzID)).toArray()
+  DEBUG('VM children:', unseenVMChildren)
   for (const child of children) {
     DEBUG('Recursing into child:', child)
+    remove(unseenVMChildren, { uuid: child.uuid })
     // @ts-expect-error
     child.parent = bygonzID // we map parent-child relationship with possibly different set of IDs
     await _saveBlockRecursively(child, blocksDB)
+  }
+  DEBUG('Unseen (i.e. removed) VM children:', unseenVMChildren)
+  for (const childVM of unseenVMChildren) {
+    await blocksDB.Blocks.update(childVM.uuid, { isDeleted: true })
   }
 }
 
@@ -89,13 +98,13 @@ export async function initiateLoadFromBlock (block: BlockEntity, blockVMs: Block
 
     await loadBlocksRecursively(blockWithChildren, blockVMs)
 
-  // await logseq.Editor.upsertBlockProperty(currentBlock.uuid, 'id', 'f39e6a9e-863b-44d4-9fe9-10c985d100eb')
-  // // Delete all children 😈
-  // for (const block of flatMapRecursiveChildren(currentBlockWithChildren)) {
-  //   if (block === currentBlockWithChildren) continue
-  //   DEBUG('REMOVING', block)
-  //   await logseq.Editor.removeBlock(block.uuid)
-  // }
+    // await logseq.Editor.upsertBlockProperty(currentBlock.uuid, 'id', 'f39e6a9e-863b-44d4-9fe9-10c985d100eb')
+    // // Delete all children 😈
+    // for (const block of flatMapRecursiveChildren(currentBlockWithChildren)) {
+    //   if (block === currentBlockWithChildren) continue
+    //   DEBUG('REMOVING', block)
+    //   await logseq.Editor.removeBlock(block.uuid)
+    // }
   } finally { console.groupEnd() }
 }
 
