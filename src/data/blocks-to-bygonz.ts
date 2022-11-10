@@ -13,9 +13,15 @@ export interface BlockWithChildren extends /* Omit< */BlockEntity/* , 'children'
   children: BlockWithChildren[]
 }
 
-export const saveBlockRecursively = debounce(_saveBlockRecursively, 1000)
+export const saveBlockRecursively = debounce(async (currentBlock: BlockEntity, blocksDB: BlocksDB) => {
+  console.groupCollapsed('Initiating save from:', currentBlock)
+  try {
+    await _saveBlockRecursively(currentBlock, blocksDB)
+  } finally { console.groupEnd() }
+}, 1000)
 
 export async function _saveBlockRecursively (currentBlock: BlockEntity, blocksDB: BlocksDB) {
+  DEBUG('Saving block recursion:', { currentBlock })
   const currentBlockWithKids = await logseq.Editor
     .getBlock(currentBlock?.uuid, { includeChildren: true }) as BlockWithChildren
   console.log({ currentBlockWithKids })
@@ -75,12 +81,13 @@ export async function _saveBlockRecursively (currentBlock: BlockEntity, blocksDB
 }
 
 export async function initiateLoadFromBlock (block: BlockEntity, blockVMs: BlockVM[]) {
-  DEBUG('Initiating load from:', block)
-  const blockWithChildren = await logseq.Editor
-    .getBlock(block?.uuid, { includeChildren: true }) as BlockWithChildren
-  DEBUG('CURRENT w/c:', blockWithChildren)
+  console.groupCollapsed('Initiating load from:', block)
+  try {
+    const blockWithChildren = await logseq.Editor
+      .getBlock(block?.uuid, { includeChildren: true }) as BlockWithChildren
+    DEBUG('CURRENT w/c:', blockWithChildren)
 
-  await loadBlocksRecursively(blockWithChildren, blockVMs)
+    await loadBlocksRecursively(blockWithChildren, blockVMs)
 
   // await logseq.Editor.upsertBlockProperty(currentBlock.uuid, 'id', 'f39e6a9e-863b-44d4-9fe9-10c985d100eb')
   // // Delete all children 😈
@@ -89,6 +96,7 @@ export async function initiateLoadFromBlock (block: BlockEntity, blockVMs: Block
   //   DEBUG('REMOVING', block)
   //   await logseq.Editor.removeBlock(block.uuid)
   // }
+  } finally { console.groupEnd() }
 }
 
 export async function loadBlocksRecursively (

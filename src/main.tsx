@@ -52,10 +52,12 @@ async function bygonzSave () {
   await logseq.Editor.exitEditingMode(true)
   // await sleep(500) // HACK otherwise root note content might not update
   if (currentBlock) {
-    await saveBlockRecursively(currentBlock, blocksDB)
+    saveBlockRecursively(currentBlock, blocksDB)
+    ERROR('REGISTER ONBLC:')
     logseq.DB.onBlockChanged(currentBlock.uuid,
       (block: BlockEntity, txData: IDatom[], txMeta?: { [key: string]: any, outlinerOp: string } | undefined) => {
-        DEBUG('onBlockChanged:', { block, txData, txMeta })
+        ERROR('onBlockChanged:', { block, txData, txMeta })
+        saveBlockRecursively(block, blocksDB)
       },
     )
   }
