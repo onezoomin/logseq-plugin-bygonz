@@ -72,8 +72,8 @@ async function bygonzSave () {
 
 async function bygonzLoad ({ currentBlock = null, fromBackground = false }: { currentBlock?: BlockEntity | null, fromBackground?: boolean }) {
   LOG('SYNC init 🎉')
-  const blockVMs: BlockVM[] = await getAllBlockVMs().map(eachUncastBlockObj => new BlockVM(eachUncastBlockObj))
-
+  const blockVMs: BlockVM[] = await getAllBlockVMs() // these should be mapped to VMs from the bygonz fx
+  DEBUG('singleBlockHistory', await blockVMs[0]?.getEntityHistory())
   if (!currentBlock && !fromBackground) {
     currentBlock = await logseq.Editor.getCurrentBlock()
     DEBUG('Initiated from Button - current block?', currentBlock)
@@ -121,6 +121,7 @@ async function getAllBlockVMs () {
   const entitiesResult = await blocksDB.getEntitiesAsOf()
   DEBUG('BlocksDB entities:', { entitiesResult })
   const blockVMs: BlockVM[] = entitiesResult.entityArray
+  // bygonz should take care of this mapping actually .map(eachUncastBlockObj => new BlockVM(eachUncastBlockObj))
   return blockVMs
 }
 
