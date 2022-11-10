@@ -10,6 +10,7 @@ specifiers:
   '@semantic-release/exec': 6.0.3
   '@semantic-release/git': 10.0.1
   '@semantic-release/npm': 9.0.1
+  '@types/lodash-es': ^4.17.6
   '@types/luxon': ^3.1.0
   '@types/node': 18.11.9
   '@types/react': 18.0.24
@@ -61,6 +62,7 @@ dependencies:
   ipfs-http-client: 59.0.0_undici@5.12.0
   ipfs-log: 5.4.2_fskqt6f5sbjhdf3mw3n6is6wsy
   keystore-idb: 0.15.5
+  lodash-es: 4.17.21
   logger: link:../ztax/src/logger
   luxon: 3.1.0
   orbit-db: 0.28.7_fskqt6f5sbjhdf3mw3n6is6wsy
@@ -74,6 +76,7 @@ devDependencies:
   '@semantic-release/exec': 6.0.3_semantic-release@19.0.5
   '@semantic-release/git': 10.0.1_semantic-release@19.0.5
   '@semantic-release/npm': 9.0.1_semantic-release@19.0.5
+  '@types/lodash-es': 4.17.6
   '@types/luxon': 3.1.0
   '@types/node': 18.11.9
   '@types/react': 18.0.24
@@ -90,7 +93,6 @@ devDependencies:
   eslint-plugin-promise: 6.1.1_eslint@8.26.0
   eslint-plugin-react: 7.31.10_eslint@8.26.0
   eslint-plugin-react-hooks: 4.6.0_eslint@8.26.0
-  lodash-es: 4.17.21
   postcss: 8.4.18
   rollup-plugin-node-globals: 1.4.0
   rollup-plugin-node-polyfills: 0.2.1
@@ -2670,6 +2672,16 @@ packages:
     dependencies:
       keyv: 4.5.0
     dev: false
+
+  /@types/lodash-es/4.17.6:
+    resolution: {integrity: sha512-R+zTeVUKDdfoRxpAryaQNRKk3105Rrgx2CFRClIgRGaqDTdjsm8h6IYA8ir584W3ePzkZfst5xIgDwYrlh9HLg==}
+    dependencies:
+      '@types/lodash': 4.14.188
+    dev: true
+
+  /@types/lodash/4.14.188:
+    resolution: {integrity: sha512-zmEmF5OIM3rb7SbLCFYoQhO4dGt2FRM9AMkxvA3LaADOF1n8in/zGJlWji9fmafLoNyz+FoL6FE0SLtGIArD7w==}
+    dev: true
 
   /@types/long/4.0.2:
     resolution: {integrity: sha512-MqTGEo5bj5t157U6fA/BiDynNkn0YknVdh48CMPkTSpFTVmvao5UQmm7uEF6xBEo7qIMAlY/JSleYaE6VOdpaA==}
@@ -8283,6 +8295,7 @@ packages:
 
   /lodash-es/4.17.21:
     resolution: {integrity: sha512-mKnC+QJ9pWVzv+C4/U3rRsHapFfHvQFoFB92e52xeyGMcX6/OlIl78je1u8vePzYZSkkogMPJ2yjxxsb89cxyw==}
+    dev: false
 
   /lodash.camelcase/4.3.0:
     resolution: {integrity: sha512-TwuEnCnxbc3rAvhf/LbG7tJUDzhqXyFnv3dtzLOPgCG/hODL7WFnsbwktkD7yUV0RrreP/l1PALq/YSg6VvjlA==}

@@ -1,7 +1,6 @@
 {
     "autoimport.filesToScan": "**/*.{mjs,wjs,js,jsx,ts,tsx,less,css}",
     "autoimport.useSemiColon": false,
-    "editor.snippetSuggestions": "top",
     "editor.codeActionsOnSave": [
         "source.fixAll",
     ],
