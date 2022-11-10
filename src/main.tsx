@@ -1,3 +1,5 @@
+import type { BlockEntity, IDatom, SettingSchemaDesc } from '@logseq/libs/dist/LSPlugin'
+
 import '@logseq/libs'
 
 import React from 'react'
@@ -6,12 +8,9 @@ import App from './App'
 import './index.css'
 
 import { logseq as PL } from '../package.json'
-import { BlockEntity, SettingSchemaDesc } from '@logseq/libs/dist/LSPlugin'
 
 import { BlocksDB, getInitializedBlocksDB } from './data/bygonz'
-import { BlockParams, BlockVM } from './data/LogSeqBlock'
-
-import { detailedDiff } from 'deep-object-diff'
+import { BlockVM } from './data/LogSeqBlock'
 
 // import { initIPFS, loadBlockFromIPFS } from './data/ipfs'
 import { Logger } from 'logger'
@@ -73,7 +72,7 @@ async function bygonzSave () {
 
 async function bygonzLoad ({ currentBlock = null, fromBackground = false }: { currentBlock?: BlockEntity | null, fromBackground?: boolean }) {
   LOG('SYNC init 🎉')
-  const blockVMs: BlockVM[] = await getAllBlockVMs()
+  const blockVMs: BlockVM[] = await getAllBlockVMs().map(eachUncastBlockObj => new BlockVM(eachUncastBlockObj))
 
   if (!currentBlock && !fromBackground) {
     currentBlock = await logseq.Editor.getCurrentBlock()
