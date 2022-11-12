@@ -18,7 +18,7 @@ export const saveBlockRecursively = debounce(async (currentBlock: BlockEntity, b
   try {
     await _saveBlockRecursively(currentBlock, blocksDB)
   } finally { console.groupEnd() }
-}, 1000)
+}, 1000) as (currentBlock: BlockEntity, blocksDB: BlocksDB) => void // remove the Promise, as debounce won't let us wait for it
 
 export async function _saveBlockRecursively (currentBlock: BlockEntity, blocksDB: BlocksDB) {
   DEBUG('Saving block recursion:', { currentBlock })
@@ -37,19 +37,10 @@ export async function _saveBlockRecursively (currentBlock: BlockEntity, blocksDB
   const currentBlockByg = await blocksDB.Blocks.get(bygonzID)
   const mappedBlockObj: Partial<BlockParams> = { uuid: bygonzID /*, ':db/id': targetBlock.id */ }
   for (const eachKey of Object.keys(currentBlock)) {
-    if (eachKey === 'children' || eachKey === 'uuid') {
-      continue
-    } else if (
-      eachKey === 'parent' && // we actually set parent in the for (child of children), because here we only have the :db/id, and this way we save ourselves a lookup
-        typeof currentBlock[eachKey] !== 'string' // from logseq, it's an object, when we set it, it's a string
-    ) {
-      continue
-    } else if (eachKey === 'content') {
-      mappedBlockObj[`${eachKey}`] = currentBlock[eachKey]
-        .replaceAll(/\n[^\n]+::[^\n]+/g, '') // HACK removes md props
-        .replaceAll(/:PROPERTIES:.+:END:/gis, '').trim() // HACK removes org mode props
-    } else {
-      mappedBlockObj[`${eachKey}`] = currentBlock[eachKey]
+    const inputVal = currentBlock[eachKey]
+    const mappedVal = mapBlockValueToBygonzValue(eachKey, inputVal)
+    if (mappedVal !== undefined) {
+      mappedBlockObj[`${eachKey}`] = mappedVal
     }
   }
 
@@ -86,6 +77,22 @@ export async function _saveBlockRecursively (currentBlock: BlockEntity, blocksDB
   DEBUG('Unseen (i.e. removed) VM children:', unseenVMChildren)
   for (const childVM of unseenVMChildren) {
     await blocksDB.Blocks.update(childVM.uuid, { isDeleted: true })
+  }
+}
+
+export function mapBlockValueToBygonzValue (eachKey: string, inputVal: any): any | undefined {
+  if (eachKey === 'children' || eachKey === 'uuid') {
+    return undefined
+  } else if (eachKey === 'parent' && // we actually set parent in the for (child of children), because here we only have the :db/id, and this way we save ourselves a lookup
+    typeof inputVal !== 'string' // HACK from logseq, it's an object, when we set it, it's a UUID string
+  ) {
+    return undefined
+  } else if (eachKey === 'content') {
+    return inputVal
+      .replaceAll(/\n[^\n]+::[^\n]+/g, '') // HACK removes md props
+      .replaceAll(/:PROPERTIES:.+:END:/gis, '').trim() // HACK removes org mode props
+  } else {
+    return inputVal
   }
 }
 

@@ -9,17 +9,17 @@ import './index.css'
 
 import { logseq as PL } from '../package.json'
 
-import { BlocksDB, getInitializedBlocksDB } from './data/bygonz'
-import { BlockVM } from './data/LogSeqBlock'
+import { BlocksDB, getInitializedBlocksDB, getAllBlockVMs } from './data/bygonz'
+import { BlockParams, BlockVM } from './data/LogSeqBlock'
+
+import { detailedDiff } from 'deep-object-diff'
 
 // import { initIPFS, loadBlockFromIPFS } from './data/ipfs'
 import { Logger } from 'logger'
 import { Buffer } from 'buffer'
-import { partition } from 'lodash-es'
 import { initiateLoadFromBlock, saveBlockRecursively } from './data/blocks-to-bygonz'
-import { sleep } from 'bygonz'
-
-type ChangeEvent = Parameters<Parameters<typeof logseq.DB.onChanged>[0]>[0]
+import { OpLogObj, OpLogVM, sleep } from 'bygonz'
+import { applyAppLogs, handleDBChangeEvent } from './data/realtime-translation'
 
 // import { flatMapRecursiveChildren } from './utils'
 globalThis.Buffer = Buffer
@@ -42,9 +42,10 @@ const pluginId = PL.id
 let blocksDB: BlocksDB
 
 const toggles = {
-  realtime: true,
+  realtime: false,
   changeListener: false,
 }
+let isLoading = false
 
 async function bygonzReset () {
   await indexedDB.deleteDatabase('BygonzBlocks')
@@ -70,73 +71,70 @@ async function bygonzSave () {
   }
 }
 
-async function bygonzLoad ({ currentBlock = null, fromBackground = false }: { currentBlock?: BlockEntity | null, fromBackground?: boolean }) {
-  LOG('SYNC init 🎉')
+async function bygonzLoad ({ currentBlock = null, fromBackground = false, newAppLogs = undefined }: { currentBlock?: BlockEntity | null, fromBackground?: boolean, newAppLogs?: OpLogVM[] }) {
+  LOG('SYNC init 🎉', { currentBlock, fromBackground, newAppLogs })
   const blockVMs: BlockVM[] = await getAllBlockVMs() // these should be mapped to VMs from the bygonz fx
   DEBUG('singleBlockHistory', await blockVMs[0]?.getEntityHistory())
-  if (!currentBlock && !fromBackground) {
-    currentBlock = await logseq.Editor.getCurrentBlock()
-    DEBUG('Initiated from Button - current block?', currentBlock)
-    if (currentBlock) {
-      // user deliberately chose to sync this block - so sync this block. and only this block.
-      await logseq.Editor.exitEditingMode(true)
-      await sleep(500) // HACK otherwise root note content did not update
-      await initiateLoadFromBlock(currentBlock, blockVMs)
-      await sleep(500)
-      await logseq.Editor.editBlock(currentBlock.uuid)
-      return
+  try {
+    isLoading = true
+
+    // HACK for realtime testing
+    const pinUuid = undefined // '636fef43-edd1-4ec9-8144-36fb1f443cc3'
+    // How to?
+    // 1. set pinUuid to true
+    // 2. reset DB, refresh, save desired blocks
+    // 3. copy block uuid of root node to an empty block and add `/bygonz`, triggering load
+    // 4. set pinUuid to the real UUID of the new target root node
+    if (pinUuid) {
+      if (currentBlock && !fromBackground) {
+      // = from slash command
+        await initiateLoadFromBlock(currentBlock, blockVMs)
+      } else {
+      // /* if (newAppLogs) */ await applyAppLogs(newAppLogs); else
+        await initiateLoadFromBlock(await logseq.Editor.getBlock(pinUuid)!, blockVMs)
+      }
     }
-  }
 
-  // TODO: check if currently editing the nodes we're updating
-
-  // Try to find the BlockVM roots in LogSeq tree
-  const rootVMs = blockVMs.filter(b => !b.parent) // in bygonz the root nodes don't have a parent
-  // if (rootVMs.length !== 1) { ERROR('Blocks list:', blockVMs); throw new Error(`Failed to determine root block in blocks list (${rootVMs.length} matches)`) }
-  for (const root of rootVMs) {
-    LOG('Checking if root exists in our LogSeq:', root.uuid)
-    let block = await logseq.Editor.getBlock(root.uuid)
-    if (!block) {
-      const resultUuid = await logseq.DB.datascriptQuery(`
-        [:find (pull ?b [:block/uuid])
-          :where
-          [?b :block/properties ?prop]
-          [(get ?prop :bygonz) ?v]
-          [(= ?v "${root.uuid}")]
-      ]`)
-      DEBUG('QUERY RESULT', resultUuid)
-      block = await logseq.Editor.getBlock(resultUuid[0][0].uuid)
+    if (!currentBlock && !fromBackground) {
+      currentBlock = await logseq.Editor.getCurrentBlock()
+      DEBUG('Initiated from Button - current block?', currentBlock)
+      if (currentBlock) {
+        // user deliberately chose to sync this block - so sync this block. and only this block.
+        await logseq.Editor.exitEditingMode(true)
+        await sleep(500) // HACK otherwise root note content did not update
+        await initiateLoadFromBlock(currentBlock, blockVMs)
+        await sleep(500)
+        return
+      }
     }
-    if (!block) {
-      WARN(`didn't find bygonz root block in local LogSeq: ${root.uuid}`)
-      continue
+
+    // TODO: check if user is currently editing the nodes we're updating
+
+    // Try to find the BlockVM roots in LogSeq tree
+    const rootVMs = blockVMs.filter(b => !b.parent) // in bygonz the root nodes don't have a parent
+    // if (rootVMs.length !== 1) { ERROR('Blocks list:', blockVMs); throw new Error(`Failed to determine root block in blocks list (${rootVMs.length} matches)`) }
+    for (const root of rootVMs) {
+      LOG('Checking if root exists in our LogSeq:', root.uuid)
+      let block = await logseq.Editor.getBlock(root.uuid)
+      if (!block) {
+        const resultUuid = await logseq.DB.datascriptQuery(`
+          [:find (pull ?b [:block/uuid])
+            :where
+            [?b :block/properties ?prop]
+            [(get ?prop :bygonz) ?v]
+            [(= ?v "${root.uuid}")]
+        ]`)
+        DEBUG('QUERY RESULT', resultUuid)
+        block = await logseq.Editor.getBlock(resultUuid[0][0].uuid)
+      }
+      if (!block) {
+        WARN(`didn't find bygonz root block in local LogSeq: ${root.uuid}`)
+        continue
+      }
+      await initiateLoadFromBlock(block, blockVMs)
     }
-    await initiateLoadFromBlock(block, blockVMs)
-  }
-  LOG('SYNC done 🎉')
-}
-
-async function getAllBlockVMs () {
-  DEBUG('DB:', blocksDB)
-  const entitiesResult = await blocksDB.getEntitiesAsOf()
-  DEBUG('BlocksDB entities:', { entitiesResult })
-  const blockVMs: BlockVM[] = entitiesResult.entityArray
-  // bygonz should take care of this mapping actually .map(eachUncastBlockObj => new BlockVM(eachUncastBlockObj))
-  return blockVMs
-}
-
-async function onDBChange (event: ChangeEvent) {
-  const { blocks, txData, txMeta } = event
-  DEBUG('[DB] change:', txMeta?.outlinerOp, event)
-
-  if (txMeta?.outlinerOp === 'saveBlock') {
-    const contentChanges = txData?.filter(atom => atom[1] === 'content')
-    if (contentChanges?.length) {
-      const [after, before] = partition(contentChanges, '[4]') // partition by op (if false, it's the retraction)
-        .map(list => list.map(atom => atom[2])) // get the value
-      DEBUG('[DB.saveBlock] content:', [before, after])
-    }
-  }
+    LOG('SYNC done 🎉')
+  } finally { setTimeout(() => { isLoading = false }, 500) } // HACK: workaround or change events sent off by our load
 }
 
 function main () {
@@ -144,7 +142,6 @@ function main () {
   logseq.useSettingsSchema(settings)
 
   const root = ReactDOM.createRoot(document.getElementById('app')!)
-
   root.render(
     <React.StrictMode>
       <App />
@@ -326,17 +323,18 @@ function main () {
   renderToolbarItems()
 
   logseq.DB.onChanged((event) => {
-    VERBOSE('onChange listener', event)
+    VERBOSE('onChange listener', event, toggles)
     if (!toggles.realtime) return
-    void onDBChange(event).catch(err => ERROR('onDBChange error', err))
+    if (isLoading) return WARN('Skipping ChangeEvent as isLoading=true', event) // HACK: find better way to check if we did this
+    void handleDBChangeEvent(event, blocksDB)// .catch(err => ERROR('onDBChange error', err))
   })
 
   setTimeout(() => {
     // initIPFS().catch(e => console.error('IPFS init failure', e))
     ((async () => {
       blocksDB = await getInitializedBlocksDB()
-      blocksDB.addUpdateListener(async () => {
-        await bygonzLoad({ fromBackground: true })
+      blocksDB.addUpdateListener(async ({ added }) => {
+        await bygonzLoad({ fromBackground: true, newAppLogs: added })
       })
     })()).catch(e => console.error('bygonz init failure', e))
   })

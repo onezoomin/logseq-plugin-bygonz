@@ -2,6 +2,9 @@ import type { Table } from 'bygonz'
 
 import { BlockParams, BlockVM } from './LogSeqBlock'
 import { BygonzDexie, DexiePlusParams, Subscription } from 'bygonz'
+import { Logger } from 'logger'
+
+const { ERROR, WARN, LOG, DEBUG, VERBOSE } = Logger.setup(Logger.INFO, { performanceEnabled: true }) // eslint-disable-line @typescript-eslint/no-unused-vars
 
 const userAddressDef = 'defaultFixThisSoItNeverShowsUpAnywhere'
 
@@ -81,4 +84,13 @@ export const getInitializedBlocksDB = async (userAddress = userAddressDef) => {
 
   await blocksDB.init(userAddress)
   return blocksDB
+}
+
+export async function getAllBlockVMs () {
+  DEBUG('DB:', blocksDB)
+  const entitiesResult = await blocksDB.getEntitiesAsOf()
+  DEBUG('BlocksDB entities:', { entitiesResult })
+  const blockVMs: BlockVM[] = entitiesResult.entityArray
+  // bygonz should take care of this mapping actually .map(eachUncastBlockObj => new BlockVM(eachUncastBlockObj))
+  return blockVMs
 }
