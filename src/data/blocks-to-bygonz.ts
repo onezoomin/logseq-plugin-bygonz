@@ -24,7 +24,7 @@ export async function _saveBlockRecursively (currentBlock: BlockEntity, blocksDB
   DEBUG('Saving block recursion:', { currentBlock })
   const currentBlockWithKids = await logseq.Editor
     .getBlock(currentBlock?.uuid, { includeChildren: true }) as BlockWithChildren
-  console.log({ currentBlockWithKids })
+  DEBUG({ currentBlockWithKids })
   const { children } = currentBlockWithKids
 
   let bygonzID = currentBlock.uuid
@@ -38,7 +38,8 @@ export async function _saveBlockRecursively (currentBlock: BlockEntity, blocksDB
   const mappedBlockObj: Partial<BlockParams> = { uuid: bygonzID /*, ':db/id': targetBlock.id */ }
   for (const eachKey of Object.keys(currentBlock)) {
     const inputVal = currentBlock[eachKey]
-    const mappedVal = mapBlockValueToBygonzValue(eachKey, inputVal)
+    if (eachKey === 'parent' && typeof inputVal !== 'string') continue
+    const mappedVal = await mapBlockValueToBygonzValue(eachKey, inputVal)
     if (mappedVal !== undefined) {
       mappedBlockObj[`${eachKey}`] = mappedVal
     }
@@ -80,13 +81,13 @@ export async function _saveBlockRecursively (currentBlock: BlockEntity, blocksDB
   }
 }
 
-export function mapBlockValueToBygonzValue (eachKey: string, inputVal: any): any | undefined {
+export async function mapBlockValueToBygonzValue (eachKey: string, inputVal: any): Promise<any | undefined> {
   if (eachKey === 'children' || eachKey === 'uuid') {
     return undefined
   } else if (eachKey === 'parent' && // we actually set parent in the for (child of children), because here we only have the :db/id, and this way we save ourselves a lookup
     typeof inputVal !== 'string' // HACK from logseq, it's an object, when we set it, it's a UUID string
   ) {
-    return undefined
+    return (await logseq.Editor.getBlock(inputVal.id))?.uuid
   } else if (eachKey === 'content') {
     return inputVal
       .replaceAll(/\n[^\n]+::[^\n]+/g, '') // HACK removes md props

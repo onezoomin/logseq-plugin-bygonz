@@ -78,8 +78,8 @@ async function bygonzLoad ({ currentBlock = null, fromBackground = false, newApp
   try {
     isLoading = true
 
-    // HACK for realtime testing
-    const pinUuid = undefined // '636fef43-edd1-4ec9-8144-36fb1f443cc3'
+    // HACK for realtime testing  ((6370c5a2-1db6-4ec3-addd-0562d37919cd))
+    const pinUuid = '6372988d-ebe6-4eec-b4a6-8ad4d1fa7a64' // '6370b62b-86fa-4031-92cf-59542992e161' // '636fef43-edd1-4ec9-8144-36fb1f443cc3'
     // How to?
     // 1. set pinUuid to true
     // 2. reset DB, refresh, save desired blocks
@@ -93,6 +93,7 @@ async function bygonzLoad ({ currentBlock = null, fromBackground = false, newApp
       // /* if (newAppLogs) */ await applyAppLogs(newAppLogs); else
         await initiateLoadFromBlock(await logseq.Editor.getBlock(pinUuid)!, blockVMs)
       }
+      return
     }
 
     if (!currentBlock && !fromBackground) {
@@ -162,8 +163,8 @@ function main () {
   })
 
   logseq.Editor.registerSlashCommand('bygonz', async (event) => {
-    DEBUG('[ /bygonz ] called', event)
     const maybeUuid = (await logseq.Editor.getEditingBlockContent()).trim()
+    DEBUG('[ /bygonz ] called', { event, maybeUuid })
     const blockVMs: BlockVM[] = await getAllBlockVMs()
     const matchingVM = blockVMs.find(vm => vm.uuid === maybeUuid)
     if (!matchingVM) throw new Error('Slash ID not found in BlocksDB') // TODO: show message
