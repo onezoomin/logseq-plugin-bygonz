@@ -18,30 +18,41 @@ export async function handleDBChangeEvent (event: ChangeEvent, blocksDB: BlocksD
   DEBUG(`handleChange${txMeta?.outlinerOp ? ` (op=${txMeta?.outlinerOp})` : ''}`, event)
   if (!txData) return
 
-  // Index data
-  const atomsByEntityID = groupBy(txData, '[0]')
-  const entitiesByID = mapValues(groupBy(blocks, 'id'), matches => {
-    if (matches.length > 1) throw new Error('Multiple blocks with same ID')
-    return matches[0]
-  })
-  DEBUG({ atomsByEntityID, entitiesByID })
   const changeSetByEntityID: Record<string, Partial<BlockVM>> = {}
-  // Iterate over individual entities
-  for (const [entityID, atoms] of Object.entries(atomsByEntityID)) {
-    const entity = entitiesByID[entityID]
-    const [bygonzID, eachChangeSet] = await mapAtomsToDBChangeSet(entity, atoms, entityID, txMeta, blocksDB)
-    if (eachChangeSet) changeSetByEntityID[bygonzID] = eachChangeSet
-    // if (txMeta?.outlinerOp === 'saveBlock') {
-    //   const contentChanges = atomsForAttribute('content')
-    // } else if (txMeta?.outlinerOp === 'moveBlocks') {
+
+  if (txMeta?.outlinerOp === 'deleteBlocks') {
+    for (const block of blocks) {
+      const bygonzID = block.properties?.bygonz ?? block.uuid
+      if (!bygonzID) { ERROR('deleted', block); throw new Error('Failed to get bygonzID from deleted block') }
+      changeSetByEntityID[bygonzID] = { isDeleted: true }
+    }
+  } else {
+    // Index data
+    const atomsByEntityID = groupBy(txData, '[0]')
+    const entitiesByID = mapValues(groupBy(blocks, 'id'), matches => {
+      if (matches.length > 1) throw new Error('Multiple blocks with same ID')
+      return matches[0]
+    })
+    DEBUG({ atomsByEntityID, entitiesByID })
+    // Iterate over individual entities
+    for (const [entityID, atoms] of Object.entries(atomsByEntityID)) {
+      const entity = entitiesByID[entityID]
+      const [bygonzID, eachChangeSet] = await mapAtomsToDBChangeSet(entity, atoms, entityID, txMeta, blocksDB)
+      if (eachChangeSet) changeSetByEntityID[bygonzID] = eachChangeSet
+      // if (txMeta?.outlinerOp === 'saveBlock') {
+      //   const contentChanges = atomsForAttribute('content')
+      // } else if (txMeta?.outlinerOp === 'moveBlocks') {
+    }
   }
 
   console.groupCollapsed('[DB transaction]', changeSetByEntityID)
   try {
     await blocksDB.transaction('rw', blocksDB.Blocks, async () => {
       for (const [bygonzID, changeSet] of Object.entries(changeSetByEntityID)) {
-        DEBUG({ bygonzID, changeSet })
-        await blocksDB.Blocks.update(bygonzID, changeSet)
+        DEBUG('saving changeSet', { bygonzID, changeSet })
+        const existingVM = await blocksDB.Blocks.get(bygonzID)
+        if (!existingVM) ERROR('Change event for non-existent VM', bygonzID, { changeSet, event })
+        else await blocksDB.Blocks.update(bygonzID, changeSet)
       }
     })
   } finally {
@@ -56,6 +67,10 @@ async function mapAtomsToDBChangeSet (
   blocksDB: BlocksDB,
 ) {
   const bygonzID = entity.properties?.bygonz ?? entity.uuid
+  if (!entityID) {
+    WARN('change op without bygonzID', { entity, atoms })
+    return [undefined, undefined]
+  }
   const atomsByAttribute = groupBy(atoms, '[1]')
   const atomsForAttribute = (attr: string) => {
     const atomsForAttr = atomsByAttribute[attr]
@@ -70,8 +85,8 @@ async function mapAtomsToDBChangeSet (
   }
   DEBUG('atomsByAttribute', atomsByAttribute)
 
-  //   const attrWhitelist = ['content', 'parent', 'left']
-  const attrsToCheck = Object.keys(atomsByAttribute)// .filter(a => attrWhitelist.includes(a))
+  const attrWhitelist = ['content', 'parent', 'left']
+  const attrsToCheck = Object.keys(atomsByAttribute).filter(a => attrWhitelist.includes(a))
   const changeSet: Partial<BlockVM> = {}
   for (const attr of attrsToCheck) {
     const [before, after] = atomsForAttribute(attr)

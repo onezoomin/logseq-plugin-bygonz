@@ -19,7 +19,7 @@ import { Logger } from 'logger'
 import { Buffer } from 'buffer'
 import { initiateLoadFromBlock, saveBlockRecursively } from './data/blocks-to-bygonz'
 import { OpLogObj, OpLogVM, sleep } from 'bygonz'
-import { applyAppLogs, handleDBChangeEvent } from './data/realtime-translation'
+import { handleDBChangeEvent } from './data/realtime-translation'
 
 // import { flatMapRecursiveChildren } from './utils'
 globalThis.Buffer = Buffer
@@ -42,7 +42,7 @@ const pluginId = PL.id
 let blocksDB: BlocksDB
 
 const toggles = {
-  realtime: false,
+  realtime: true,
   changeListener: false,
 }
 let isLoading = false
@@ -79,7 +79,7 @@ async function bygonzLoad ({ currentBlock = null, fromBackground = false, newApp
     isLoading = true
 
     // HACK for realtime testing  ((6370c5a2-1db6-4ec3-addd-0562d37919cd))
-    const pinUuid = '6372988d-ebe6-4eec-b4a6-8ad4d1fa7a64' // '6370b62b-86fa-4031-92cf-59542992e161' // '636fef43-edd1-4ec9-8144-36fb1f443cc3'
+    const pinUuid = '6373b0ba-bd3f-4a3a-a73f-498091215d03' // '6370b62b-86fa-4031-92cf-59542992e161' // '636fef43-edd1-4ec9-8144-36fb1f443cc3'
     // How to?
     // 1. set pinUuid to true
     // 2. reset DB, refresh, save desired blocks
@@ -87,10 +87,10 @@ async function bygonzLoad ({ currentBlock = null, fromBackground = false, newApp
     // 4. set pinUuid to the real UUID of the new target root node
     if (pinUuid) {
       if (currentBlock && !fromBackground) {
-      // = from slash command
+        // = from slash command
         await initiateLoadFromBlock(currentBlock, blockVMs)
       } else {
-      // /* if (newAppLogs) */ await applyAppLogs(newAppLogs); else
+        // /* if (newAppLogs) */ await applyAppLogs(newAppLogs); else
         await initiateLoadFromBlock(await logseq.Editor.getBlock(pinUuid)!, blockVMs)
       }
       return
@@ -327,7 +327,7 @@ function main () {
     VERBOSE('onChange listener', event, toggles)
     if (!toggles.realtime) return
     if (isLoading) return WARN('Skipping ChangeEvent as isLoading=true', event) // HACK: find better way to check if we did this
-    void handleDBChangeEvent(event, blocksDB)// .catch(err => ERROR('onDBChange error', err))
+    void handleDBChangeEvent(event, blocksDB).catch(err => ERROR('onDBChange error', err))
   })
 
   setTimeout(() => {
