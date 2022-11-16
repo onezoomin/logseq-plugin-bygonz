@@ -62,12 +62,12 @@ async function bygonzSave () {
   // await sleep(500) // HACK otherwise root note content might not update
   if (currentBlock) {
     saveBlockRecursively(currentBlock, blocksDB)
-    logseq.DB.onBlockChanged(currentBlock.uuid,
-      (block: BlockEntity, txData: IDatom[], txMeta?: { [key: string]: any, outlinerOp: string } | undefined) => {
-        DEBUG('onBlockChanged:', { block, txData, txMeta })
-        saveBlockRecursively(block, blocksDB)
-      },
-    )
+    // logseq.DB.onBlockChanged(currentBlock.uuid,
+    //   (block: BlockEntity, txData: IDatom[], txMeta?: { [key: string]: any, outlinerOp: string } | undefined) => {
+    //     DEBUG('onBlockChanged:', { block, txData, txMeta })
+    //     saveBlockRecursively(block, blocksDB)
+    //   },
+    // )
   }
 }
 
@@ -108,8 +108,6 @@ async function bygonzLoad ({ currentBlock = null, fromBackground = false, newApp
         return
       }
     }
-
-    // TODO: check if user is currently editing the nodes we're updating
 
     // Try to find the BlockVM roots in LogSeq tree
     const rootVMs = blockVMs.filter(b => !b.parent) // in bygonz the root nodes don't have a parent

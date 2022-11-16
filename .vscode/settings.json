@@ -33,5 +33,8 @@
         "titleBar.inactiveBackground": "#b0577d99",
         "titleBar.inactiveForeground": "#e7e7e799"
     },
-    "peacock.color": "#b0577d"
+    "peacock.color": "#b0577d",
+    "todo-tree.highlights.defaultHighlight": {
+        "background": "#ffcc77"
+    }
 }

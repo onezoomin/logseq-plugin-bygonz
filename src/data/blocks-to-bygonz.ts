@@ -21,7 +21,7 @@ export const saveBlockRecursively = debounce(async (currentBlock: BlockEntity, b
   try {
     await _saveBlockRecursively(currentBlock, blocksDB)
   } finally { console.groupEnd() }
-}, 1000) as (currentBlock: BlockEntity, blocksDB: BlocksDB) => void // remove the Promise, as debounce won't let us wait for it
+}, 1000/* HACK think about this */) as (currentBlock: BlockEntity, blocksDB: BlocksDB) => void // remove the Promise, as debounce won't let us wait for it
 
 export async function _saveBlockRecursively (currentBlock: BlockEntity, blocksDB: BlocksDB) {
   DEBUG('Saving block recursion:', { currentBlock })
@@ -120,7 +120,8 @@ export async function initiateLoadFromBlock (block: BlockEntity, blockVMs: Block
     const t = performance.now()
     const blockWithChildren = await logseq.Editor
       .getBlock(block.uuid, { includeChildren: true }) as BlockWithChildren
-    DEBUG('CURRENT w/c:', blockWithChildren, (performance.now() - t))
+    const currentEditingUuid = await logseq.Editor.checkEditing() as string | false
+    DEBUG('CURRENT w/c:', { blockWithChildren, currentEditingUuid })
 
     // t = performance.now()
     // const recursiveDatalog = await logseq.DB.datascriptQuery(`
@@ -131,7 +132,7 @@ export async function initiateLoadFromBlock (block: BlockEntity, blockVMs: Block
     // `) // [or (?d :block/parent ?d) (?d :block/parent ?c)]]
     // DEBUG('CURRENT from datalog:', recursiveDatalog, (performance.now() - t))
 
-    await loadBlocksRecursively(blockWithChildren, blockVMs)
+    await loadBlocksRecursively(blockWithChildren, blockVMs, currentEditingUuid)
 
     // await logseq.Editor.upsertBlockProperty(currentBlock.uuid, 'id', 'f39e6a9e-863b-44d4-9fe9-10c985d100eb')
     // // Delete all children 😈
@@ -146,6 +147,7 @@ export async function initiateLoadFromBlock (block: BlockEntity, blockVMs: Block
 export async function loadBlocksRecursively (
   currentBlock: BlockWithChildren,
   blockVMs: BlockVM[],
+  currentEditingUuid: string | false,
   currentVM: BlockVM | undefined = undefined,
   recursion = 0,
   rootBlockUUID = currentBlock.uuid,
@@ -162,15 +164,22 @@ export async function loadBlocksRecursively (
   }
 
   // Update self
-  DEBUG(`Updating ${currentBlock.uuid}`, { currentBlock, currentVM, blockVMs })
-  await logseq.Editor.updateBlock(
-    currentBlock.uuid,
-    currentVM.content, // TODO: check if different at all
-    /* { properties:  currentBlock.properties { foo: 'bar' } } */ // TODO DOESN'T WORK
-  )
+  if (currentVM.content !== currentBlock.content) {
+    DEBUG(`Updating ${currentBlock.uuid}`, { currentBlock, currentVM, blockVMs })
+    if (currentBlock.uuid === currentEditingUuid) {
+      DEBUG('Exiting editing mode', { currentBlock })
+      // HACK: save editing content before
+      await logseq.Editor.exitEditingMode()
+    }
+    await logseq.Editor.updateBlock(
+      currentBlock.uuid,
+      currentVM.content,
+      /* { properties:  currentBlock.properties { foo: 'bar' } } */ // FIXME: DOESN'T WORK
+    )
+  }
   await logseq.Editor.upsertBlockProperty(currentBlock.uuid, 'bygonz', currentVM.uuid)
 
-  // TODO ... oh and also all the other props
+  // TODO ... oh and also all the other attributes
   // await sleep(1000)
 
   // Add / Update children
