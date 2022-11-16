@@ -107,10 +107,11 @@ export class BlockVM extends Mixin(Block, WithHistory) {
   }
 
   async setDeleted () {
-    console.log('del', this.uuid)
-    const { getInitializedBlocksDB } = await import('./bygonz')
-    const blocksDB = await getInitializedBlocksDB()
-    void blocksDB.Blocks.update(this.uuid, { content: '-deleted-' /* HACK for testing */, isDeleted: true })
+    throw new Error('DIFFERENT WAY OF DOING THINGS,DON\'T CALL')
+    // console.log('del', this.uuid)
+    // const { getInitializedBlocksDB } = await import('./bygonz')
+    // const blocksDB = await getInitializedBlocksDB()
+    // void blocksDB.Blocks.update(this.uuid, { content: '-deleted-' /* HACK for testing */, isDeleted: true })
   }
 }
 

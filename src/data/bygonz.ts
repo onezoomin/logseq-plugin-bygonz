@@ -1,10 +1,11 @@
-import type { Table } from 'bygonz'
+import type { NewAppLogsEvent, Table } from 'bygonz'
 
 import { BlockParams, BlockVM } from './LogSeqBlock'
 import { BygonzDexie, DexiePlusParams, Subscription } from 'bygonz'
 import { Logger } from 'logger'
+import { isEqual } from 'lodash-es'
 
-const { ERROR, WARN, LOG, DEBUG, VERBOSE } = Logger.setup(Logger.INFO, { performanceEnabled: true }) // eslint-disable-line @typescript-eslint/no-unused-vars
+const { ERROR, WARN, LOG, DEBUG, VERBOSE } = Logger.setup(Logger.DEBUG, { prefix: '[Blocks]', performanceEnabled: true }) // eslint-disable-line @typescript-eslint/no-unused-vars
 
 const userAddressDef = 'defaultFixThisSoItNeverShowsUpAnywhere'
 
@@ -73,6 +74,17 @@ export class BlocksDB extends BygonzDexie {
     this.doMappings()
     // super(params[0]) // reactivity works if extending Dexie (not loaded from CDN) and using these normal instantiations
     // this.version(1).stores(stores)
+  }
+
+  async updateDBOnNewAppLogs (data: NewAppLogsEvent) {
+    const { entityArray, entitiesGroupedByTablename } = await this.getEntitiesAsOf()
+    if (!isEqual(Object.keys(entitiesGroupedByTablename), ['Blocks'])) throw new Error(`Unexpected table names: ${Object.keys(entitiesGroupedByTablename).join(',')}`)
+
+    await DEBUG.group('Updating BlocksDB', { data, entitiesGroupedByTablename, entityArray }, async () => {
+      await this.nonBygonzDB.transaction('rw', this.nonBygonzDB._allTables.Blocks, async () => {
+        await this.nonBygonzDB._allTables.Blocks.bulkPut(entitiesGroupedByTablename.Blocks)
+      })
+    })
   }
 }
 
