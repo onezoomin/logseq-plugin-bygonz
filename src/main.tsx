@@ -79,7 +79,7 @@ async function bygonzLoad ({ currentBlock = null, fromBackground = false, newApp
     isLoading = true
 
     // HACK for realtime testing  ((6370c5a2-1db6-4ec3-addd-0562d37919cd)) ((6372988d-ebe6-4eec-b4a6-8ad4d1fa7a64))
-    const pinUuid = false// '6372988d-ebe6-4eec-b4a6-8ad4d1fa7a64' // '6370b62b-86fa-4031-92cf-59542992e161' // '636fef43-edd1-4ec9-8144-36fb1f443cc3'
+    const pinUuid = false // '6372988d-ebe6-4eec-b4a6-8ad4d1fa7a64' // '6370b62b-86fa-4031-92cf-59542992e161' // '636fef43-edd1-4ec9-8144-36fb1f443cc3'
     // How to?
     // 1. set pinUuid to true
     // 2. reset DB, refresh, save desired blocks

@@ -84,7 +84,7 @@ export async function initIPFS () {
 window.Log = Log
 
 export async function loadBlockFromIPFS (cid: string, targetBlock: BlockEntity): Promise<void> {
-  const placeholder = await logseq.Editor.insertBlock(targetBlock.uuid, '🚀 Fetching ...', { before: false })
+  const placeholder = await logseq.Editor.insertBlock(targetBlock.uuid, '🚀 Fetching ...', { before: false, focus: false })
   if (!placeholder) throw new Error('failed to create placeholder')
 
   const otherLog = await Log.fromMultihash(ipfs, identity, cid)

@@ -193,7 +193,7 @@ export async function loadBlocksRecursively (
         currentBlock.uuid,
         childVM.content,
         // 'parent': we don't need to set it because we're already putting it in the right place
-        { sibling: false/* , customUUID: childVM.uuid */, properties: { /* id: childVM.uuid, */ bygonz: childVM.uuid } },
+        { sibling: false, focus: false/* , customUUID: childVM.uuid */, properties: { /* id: childVM.uuid, */ bygonz: childVM.uuid } },
       )
       DEBUG('Insert result:', { newBlock })
       if (!newBlock) { ERROR('empty insert result for', { childVM }); throw new Error('Empty insert result') }
