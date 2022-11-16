@@ -8,6 +8,16 @@ import { BlockParams, BlockVM } from './LogSeqBlock'
 
 const { ERROR, WARN, LOG, DEBUG, VERBOSE } = Logger.setup(Logger.DEBUG, { prefix: '[DB]', performanceEnabled: true }) // eslint-disable-line @typescript-eslint/no-unused-vars
 type ChangeEvent = Parameters<Parameters<typeof logseq.DB.onChanged>[0]>[0]
+interface AddOp {
+  op: 'add'
+  data: BlockParams
+}
+interface UpdateOp {
+  op: 'update'
+  bygonzID: string
+  data: Partial<BlockParams>
+}
+type ChangeOp = AddOp | UpdateOp
 
 export async function handleDBChangeEvent (event: ChangeEvent, blocksDB: BlocksDB) {
   const {
@@ -18,7 +28,7 @@ export async function handleDBChangeEvent (event: ChangeEvent, blocksDB: BlocksD
   DEBUG(`handleChange${txMeta?.outlinerOp ? ` (op=${txMeta?.outlinerOp})` : ''}`, event)
   if (!txData) return
 
-  const changeSets: Array<{ op, data, bygonzID? }> = []
+  const changeSets: ChangeOp[] = []
 
   if (txMeta?.outlinerOp === 'deleteBlocks') {
     for (const block of blocks) {
@@ -47,18 +57,22 @@ export async function handleDBChangeEvent (event: ChangeEvent, blocksDB: BlocksD
     }
   }
 
-  console.groupCollapsed('[DB transaction]', changeSets)
-  try {
-    await blocksDB.transaction('rw', blocksDB.Blocks, async () => {
-      for (const { bygonzID, data, op } of changeSets) {
-        DEBUG('saving changeSet', { bygonzID, data, op })
-        if (op === 'add') {
-          await blocksDB.Blocks.add(data)
-        } else await blocksDB.Blocks.update(bygonzID, data)
-      }
-    })
-  } finally {
-    console.groupEnd()
+  if (changeSets.length) {
+    console.groupCollapsed('[DB transaction]', changeSets)
+    try {
+      await blocksDB.transaction('rw', blocksDB.Blocks, async () => {
+        for (const dbOp of changeSets) {
+          DEBUG('saving changeSet', dbOp)
+          if (dbOp.op === 'add') {
+            await blocksDB.Blocks.add(dbOp.data)
+          } else {
+            await blocksDB.Blocks.update(dbOp.bygonzID, dbOp.data)
+          }
+        }
+      })
+    } finally {
+      console.groupEnd()
+    }
   }
 }
 async function mapAtomsToDBChangeSet (
@@ -67,17 +81,22 @@ async function mapAtomsToDBChangeSet (
   entityID: string,
   txMeta: { [key: string]: unknown, outlinerOp: string } | undefined,
   blocksDB: BlocksDB,
-) {
+): Promise<ChangeOp | null> {
   if (!entityID) {
-    WARN('change op without bygonzID', { block, atoms })
-    return [undefined, undefined]
+    WARN('Ignoring change op without bygonzID', { block, atoms })
+    return null
+  }
+  if (!block.parent || !block.page) {
+    WARN('Ignoring block without page or parent:', { block })
+    return null
   }
   const bygonzID = block.properties?.bygonz ?? block.uuid
   const existingVM = await blocksDB.Blocks.get(bygonzID)
 
   if (!existingVM) {
-    DEBUG('Change event for non-existent VM... creating', { bygonzID, block })
-    return { op: 'add', data: await mapBlockToBlockVM(bygonzID, block) }
+    const blockVM = await mapBlockToBlockVM(bygonzID, block)
+    DEBUG('Change event for non-existent VM... creating', { bygonzID, block, blockVM })
+    return { op: 'add', data: blockVM }
   } else {
     const atomsByAttribute = groupBy(atoms, '[1]')
     const atomsForAttribute = (attr: string) => {

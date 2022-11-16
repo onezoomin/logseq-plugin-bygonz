@@ -37,17 +37,17 @@ export async function _saveBlockRecursively (currentBlock: BlockEntity, blocksDB
     // TODO: if this were to become a serious implementation necessity, we'd also need to map e.g. references in the content
     bygonzID = currentBlock.properties.bygonz
   }
-  const currentBlockByg = await blocksDB.Blocks.get(bygonzID)
 
-  const mappedBlockObj = await mapBlockToBlockVM(bygonzID, currentBlock)
   // persist UUID - https://github.com/logseq/logseq/issues/4141
   if (!currentBlock.properties?.id && !currentBlock.properties?.bygonz) {
     DEBUG('Pinning UUID:', currentBlock)
     await logseq.Editor.upsertBlockProperty(currentBlock.uuid, 'id', currentBlock.uuid)
   }
 
+  const mappedBlockObj = await mapBlockToBlockVM(bygonzID, currentBlock, true)
+  const currentBlockByg = await blocksDB.Blocks.get(bygonzID)
   if (!currentBlockByg) {
-    await blocksDB.Blocks.add(mappedBlockObj as BlockParams)
+    await blocksDB.Blocks.add(mappedBlockObj)
     DEBUG('adding', { mappedBlockObj })
   } else {
     const diff = detailedDiff(currentBlockByg as object, mappedBlockObj as object) as { added: Partial<BlockParams>, updated: Partial<BlockParams> }
@@ -100,17 +100,17 @@ export async function mapBlockValueToBygonzValue (attribute: string, inputVal: a
   }
 }
 
-export async function mapBlockToBlockVM (bygonzID, block) {
+export async function mapBlockToBlockVM (bygonzID: string, block: BlockEntity, skipParentLeft = false): Promise<BlockParams> {
   const mappedBlockObj: Partial<BlockParams> = { uuid: bygonzID /*, ':db/id': targetBlock.id */ }
   for (const eachKey of Object.keys(block)) {
     const inputVal = block[eachKey]
-    if (eachKey === 'parent' && typeof inputVal !== 'string') continue
+    if (skipParentLeft && ['parent', 'left'].includes(eachKey) && typeof inputVal !== 'string') continue
     const mappedVal = await mapBlockValueToBygonzValue(eachKey, inputVal)
     if (mappedVal !== undefined) {
       mappedBlockObj[`${eachKey}`] = mappedVal
     }
   }
-  return mappedBlockObj
+  return mappedBlockObj as BlockParams
 }
 
 export async function initiateLoadFromBlock (block: BlockEntity, blockVMs: BlockVM[]) {
