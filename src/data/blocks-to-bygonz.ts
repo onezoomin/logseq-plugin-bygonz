@@ -88,9 +88,10 @@ export async function mapBlockValueToBygonzValue (attribute: string, inputVal: a
     typeof inputVal !== 'string' // HACK from logseq, it's an object, when we set it, it's a UUID string
   ) {
     const id = typeof inputVal === 'number' ? inputVal : inputVal.id
+    VERBOSE(`Lookup uuid for ${attribute}`, id)
     const block = (await logseq.Editor.getBlock(id))
     if (!block) { ERROR(inputVal); throw new Error(`Failed to lookup by db id ${id}`) }
-    return block.uuid
+    return block.properties?.bygonz ?? block.uuid
   } else if (attribute === 'content') {
     return inputVal
       .replaceAll(/\n[^\n]+::[^\n]+/g, '') // HACK removes md props

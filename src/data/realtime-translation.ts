@@ -5,6 +5,7 @@ import { BlockEntity, IDatom } from '@logseq/libs/dist/LSPlugin'
 import { allPromises, OpLogObj } from 'bygonz'
 import { mapBlockToBlockVM, mapBlockValueToBygonzValue } from './blocks-to-bygonz'
 import { BlockParams, BlockVM } from './LogSeqBlock'
+import Mutex from 'await-mutex'
 
 const { ERROR, WARN, LOG, DEBUG, VERBOSE } = Logger.setup(Logger.DEBUG, { prefix: '[DB]', performanceEnabled: true }) // eslint-disable-line @typescript-eslint/no-unused-vars
 type ChangeEvent = Parameters<Parameters<typeof logseq.DB.onChanged>[0]>[0]
@@ -19,60 +20,69 @@ interface UpdateOp {
 }
 type ChangeOp = AddOp | UpdateOp
 
+const handleDBChangeMutex = new Mutex()
+
 export async function handleDBChangeEvent (event: ChangeEvent, blocksDB: BlocksDB) {
   const {
     blocks,
     txData, // entityID, attribute, value, transaction, op(false=before,true=after)
     txMeta,
   } = event
-  DEBUG(`handleChange${txMeta?.outlinerOp ? ` (op=${txMeta?.outlinerOp})` : ''}`, event)
-  if (!txData) return
+  DEBUG(`MUTEX? handleChange${txMeta?.outlinerOp ? ` (op=${txMeta?.outlinerOp})` : ''}`, event)
+  const unlockMutex = await handleDBChangeMutex.lock()
+  try {
+    return DEBUG.group(`handleChange${txMeta?.outlinerOp ? ` (op=${txMeta?.outlinerOp})` : ''}`, event, async () => {
+      if (!txData) return
 
-  const changeSets: ChangeOp[] = []
+      const changeSets: ChangeOp[] = []
 
-  if (txMeta?.outlinerOp === 'deleteBlocks') {
-    for (const block of blocks) {
-      const bygonzID = block.properties?.bygonz ?? block.uuid
-      if (!bygonzID) { ERROR('deleted', block); throw new Error('Failed to get bygonzID from deleted block') }
-      changeSets.push({ op: 'update', bygonzID, data: { isDeleted: true } })
-    }
-  } else {
-    // Index data
-    const atomsByEntityID = groupBy(txData, '[0]')
-    const entitiesByID = mapValues(groupBy(blocks, 'id'), matches => {
-      if (matches.length > 1) throw new Error('Multiple blocks with same ID')
-      return matches[0]
-    })
-    DEBUG({ atomsByEntityID, entitiesByID })
-    // Iterate over individual entities
-    for (const [entityID, atoms] of Object.entries(atomsByEntityID)) {
-      const entity = entitiesByID[entityID]
-      const changeSet = await mapAtomsToDBChangeSet(entity, atoms, entityID, txMeta, blocksDB)
-
-      if (changeSet) changeSets.push(changeSet)
-
-      // if (txMeta?.outlinerOp === 'saveBlock') {
-      //   const contentChanges = atomsForAttribute('content')
-      // } else if (txMeta?.outlinerOp === 'moveBlocks') {
-    }
-  }
-
-  if (changeSets.length) {
-    console.groupCollapsed('[DB transaction]', changeSets)
-    try {
-      await blocksDB.transaction('rw', blocksDB.Blocks, async () => {
-        for (const dbOp of changeSets) {
-          DEBUG('saving changeSet', dbOp)
-          if (dbOp.op === 'add') {
-            await blocksDB.Blocks.add(dbOp.data)
-          } else {
-            await blocksDB.Blocks.update(dbOp.bygonzID, dbOp.data)
-          }
+      if (txMeta?.outlinerOp === 'deleteBlocks') {
+        for (const block of blocks) {
+          const bygonzID = block.properties?.bygonz ?? block.uuid
+          if (!bygonzID) { ERROR('deleted', block); throw new Error('Failed to get bygonzID from deleted block') }
+          changeSets.push({ op: 'update', bygonzID, data: { isDeleted: true } })
         }
-      })
-    } finally {
-      console.groupEnd()
-    }
+      } else {
+        // Index data
+        const atomsByEntityID = groupBy(txData, '[0]')
+        const entitiesByID = mapValues(groupBy(blocks, 'id'), matches => {
+          if (matches.length > 1) throw new Error('Multiple blocks with same ID')
+          return matches[0]
+        })
+        DEBUG({ atomsByEntityID, entitiesByID })
+        // Iterate over individual entities
+        for (const [entityID, atoms] of Object.entries(atomsByEntityID)) {
+          const entity = entitiesByID[entityID]
+          const changeSet = await mapAtomsToDBChangeSet(entity, atoms, entityID, txMeta, blocksDB)
+
+          if (changeSet) changeSets.push(changeSet)
+
+          // if (txMeta?.outlinerOp === 'saveBlock') {
+          //   const contentChanges = atomsForAttribute('content')
+          // } else if (txMeta?.outlinerOp === 'moveBlocks') {
+        }
+      }
+
+      if (changeSets.length) {
+        console.groupCollapsed('[DB transaction]', changeSets)
+        try {
+          await blocksDB.transaction('rw', blocksDB.Blocks, async () => {
+            for (const dbOp of changeSets) {
+              DEBUG('saving changeSet', dbOp)
+              if (dbOp.op === 'add') {
+                await blocksDB.Blocks.add(dbOp.data)
+              } else {
+                await blocksDB.Blocks.update(dbOp.bygonzID, dbOp.data)
+              }
+            }
+          })
+        } finally {
+          console.groupEnd()
+        }
+      }
+    })
+  } finally {
+    unlockMutex()
   }
 }
 async function mapAtomsToDBChangeSet (

@@ -11,6 +11,7 @@
   "dependencies": {
     "@logseq/libs": "^0.0.10",
     "@multiformats/multiaddr": "^11.0.7",
+    "await-mutex": "^1.0.2",
     "buffer": "^6.0.3",
     "bygonz": "link:../ztax/src/bygonz",
     "deep-object-diff": "^1.1.9",
