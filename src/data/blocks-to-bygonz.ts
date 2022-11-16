@@ -221,7 +221,7 @@ export async function loadBlocksRecursively (
       //   matching = { ...newBlock, uuid: newBlock.uuid, children: [] } as BlockWithChildren
       // } else DEBUG('insert->getBlock result:', matching)
 
-      await loadBlocksRecursively({ ...newBlock, children: [] }, blockVMs, childVM, recursion + 1, rootBlockUUID)
+      await loadBlocksRecursively({ ...newBlock, children: [] }, blockVMs, currentEditingUuid, childVM, recursion + 1, rootBlockUUID)
     } else {
       if (childVM.isDeleted) {
         DEBUG('Found matching block for deleted childVM, so deleting it', { childVM, matchingBlock })
@@ -230,7 +230,7 @@ export async function loadBlocksRecursively (
       }
       // Remove from unseen children list
       pull(unseenChildren, matchingBlock)
-      await loadBlocksRecursively(matchingBlock, blockVMs, childVM, recursion + 1, rootBlockUUID)
+      await loadBlocksRecursively(matchingBlock, blockVMs, currentEditingUuid, childVM, recursion + 1, rootBlockUUID)
     }
   }
 
