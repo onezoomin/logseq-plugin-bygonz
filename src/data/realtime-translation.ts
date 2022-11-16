@@ -3,7 +3,7 @@ import { partition, groupBy, mapValues, find } from 'lodash-es'
 import { BlocksDB } from './bygonz'
 import { BlockEntity, IDatom } from '@logseq/libs/dist/LSPlugin'
 import { allPromises, OpLogObj } from 'bygonz'
-import { mapBlockValueToBygonzValue } from './blocks-to-bygonz'
+import { mapBlockToBlockVM, mapBlockValueToBygonzValue } from './blocks-to-bygonz'
 import { BlockParams, BlockVM } from './LogSeqBlock'
 
 const { ERROR, WARN, LOG, DEBUG, VERBOSE } = Logger.setup(Logger.DEBUG, { prefix: '[DB]', performanceEnabled: true }) // eslint-disable-line @typescript-eslint/no-unused-vars
@@ -18,13 +18,13 @@ export async function handleDBChangeEvent (event: ChangeEvent, blocksDB: BlocksD
   DEBUG(`handleChange${txMeta?.outlinerOp ? ` (op=${txMeta?.outlinerOp})` : ''}`, event)
   if (!txData) return
 
-  const changeSetByEntityID: Record<string, Partial<BlockVM>> = {}
+  const changeSets: Array<{ op, data, bygonzID? }> = []
 
   if (txMeta?.outlinerOp === 'deleteBlocks') {
     for (const block of blocks) {
       const bygonzID = block.properties?.bygonz ?? block.uuid
       if (!bygonzID) { ERROR('deleted', block); throw new Error('Failed to get bygonzID from deleted block') }
-      changeSetByEntityID[bygonzID] = { isDeleted: true }
+      changeSets.push({ op: 'update', bygonzID, data: { isDeleted: true } })
     }
   } else {
     // Index data
@@ -37,22 +37,24 @@ export async function handleDBChangeEvent (event: ChangeEvent, blocksDB: BlocksD
     // Iterate over individual entities
     for (const [entityID, atoms] of Object.entries(atomsByEntityID)) {
       const entity = entitiesByID[entityID]
-      const [bygonzID, eachChangeSet] = await mapAtomsToDBChangeSet(entity, atoms, entityID, txMeta, blocksDB)
-      if (eachChangeSet) changeSetByEntityID[bygonzID] = eachChangeSet
+      const changeSet = await mapAtomsToDBChangeSet(entity, atoms, entityID, txMeta, blocksDB)
+
+      if (changeSet) changeSets.push(changeSet)
+
       // if (txMeta?.outlinerOp === 'saveBlock') {
       //   const contentChanges = atomsForAttribute('content')
       // } else if (txMeta?.outlinerOp === 'moveBlocks') {
     }
   }
 
-  console.groupCollapsed('[DB transaction]', changeSetByEntityID)
+  console.groupCollapsed('[DB transaction]', changeSets)
   try {
     await blocksDB.transaction('rw', blocksDB.Blocks, async () => {
-      for (const [bygonzID, changeSet] of Object.entries(changeSetByEntityID)) {
-        DEBUG('saving changeSet', { bygonzID, changeSet })
-        const existingVM = await blocksDB.Blocks.get(bygonzID)
-        if (!existingVM) ERROR('Change event for non-existent VM', bygonzID, { changeSet, event })
-        else await blocksDB.Blocks.update(bygonzID, changeSet)
+      for (const { bygonzID, data, op } of changeSets) {
+        DEBUG('saving changeSet', { bygonzID, data, op })
+        if (op === 'add') {
+          await blocksDB.Blocks.add(data)
+        } else await blocksDB.Blocks.update(bygonzID, data)
       }
     })
   } finally {
@@ -60,52 +62,60 @@ export async function handleDBChangeEvent (event: ChangeEvent, blocksDB: BlocksD
   }
 }
 async function mapAtomsToDBChangeSet (
-  entity: BlockEntity,
+  block: BlockEntity,
   atoms: IDatom[],
   entityID: string,
   txMeta: { [key: string]: unknown, outlinerOp: string } | undefined,
   blocksDB: BlocksDB,
 ) {
-  const bygonzID = entity.properties?.bygonz ?? entity.uuid
   if (!entityID) {
-    WARN('change op without bygonzID', { entity, atoms })
+    WARN('change op without bygonzID', { block, atoms })
     return [undefined, undefined]
   }
-  const atomsByAttribute = groupBy(atoms, '[1]')
-  const atomsForAttribute = (attr: string) => {
-    const atomsForAttr = atomsByAttribute[attr]
-    if (atomsForAttr.length === 0) { return [[], []] }
+  const bygonzID = block.properties?.bygonz ?? block.uuid
+  const existingVM = await blocksDB.Blocks.get(bygonzID)
 
-    const [after, before] = partition(atomsForAttr, '[4]') // partition by op (if false, it's the retraction)
-      .map(list => list.map(atom => atom[2])) // for each atoms list get just the value of the atom
-    DEBUG('[DB.saveBlock] content:', [before, after])
-    if (before.length > 1) { WARN('Hm... retraction count > 1:', attr, before, { entityID, atoms }) }
-    if (after.length !== 1) { ERROR('WTF?  new value count != 1:', attr, after, { entityID, atoms }) }
-    return [before, after]
-  }
-  DEBUG('atomsByAttribute', atomsByAttribute)
+  if (!existingVM) {
+    DEBUG('Change event for non-existent VM... creating', { bygonzID, block })
+    return { op: 'add', data: await mapBlockToBlockVM(bygonzID, block) }
+  } else {
+    const atomsByAttribute = groupBy(atoms, '[1]')
+    const atomsForAttribute = (attr: string) => {
+      const atomsForAttr = atomsByAttribute[attr]
+      if (atomsForAttr.length === 0) { return [[], []] }
 
-  const attrWhitelist = ['content', 'parent', 'left']
-  const attrsToCheck = Object.keys(atomsByAttribute).filter(a => attrWhitelist.includes(a))
-  const changeSet: Partial<BlockVM> = {}
-  for (const attr of attrsToCheck) {
-    const [before, after] = atomsForAttribute(attr)
-    // DEBUG(`Changed? '${attr}' `, after, { before, entity, bygonzID })
-    // if (after.length) {
-    const dbBefore = (await blocksDB.Blocks.get(bygonzID))?.[attr]
-    DEBUG(`Saving new '${attr}' value:`, after, { entity, bygonzID })
-    if (!((await allPromises(before.map(async v => await mapBlockValueToBygonzValue(attr, v)))).includes(dbBefore))) {
-      WARN('vm state was different than \'before\' of DB change:', { before, dbBefore, bygonzID, entity })
+      const [after, before] = partition(atomsForAttr, '[4]') // partition by op (if false, it's the retraction)
+        .map(list => list.map(atom => atom[2])) // for each atoms list get just the value of the atom
+      DEBUG('[DB.saveBlock] content:', [before, after])
+      if (before.length > 1) { WARN('Hm... retraction count > 1:', attr, before, { entityID, atoms }) }
+      if (after.length !== 1) { ERROR('WTF?  new value count != 1:', attr, after, { entityID, atoms }) }
+      return [before, after]
     }
-    const newVal = after[0]
-    const mappedNewVal = await mapBlockValueToBygonzValue(attr, newVal)
-    DEBUG(`Mapped value for '${attr}':`, mappedNewVal)
-    if (mappedNewVal) {
-      changeSet[attr] = mappedNewVal
+    DEBUG('atomsByAttribute', atomsByAttribute)
+
+    const attrWhitelist = ['content', 'parent', 'left']
+    const attrsToCheck = Object.keys(atomsByAttribute).filter(a => attrWhitelist.includes(a))
+    const changeSet: Partial<BlockVM> = {}
+    for (const attr of attrsToCheck) {
+      const [before, after] = atomsForAttribute(attr)
+      // DEBUG(`Changed? '${attr}' `, after, { before, entity, bygonzID })
+      // if (after.length) {
+      const dbBefore = (await blocksDB.Blocks.get(bygonzID))?.[attr]
+      DEBUG(`Saving new '${attr}' value:`, after, { entity: block, bygonzID })
+      if (!((await allPromises(before.map(async v => await mapBlockValueToBygonzValue(attr, v)))).includes(dbBefore))) {
+        WARN('vm state was different than \'before\' of DB change:', { before, dbBefore, bygonzID, entity: block })
+      }
+      const newVal = after[0]
+      const mappedNewVal = await mapBlockValueToBygonzValue(attr, newVal)
+      DEBUG(`Mapped value for '${attr}':`, mappedNewVal)
+      if (mappedNewVal) {
+        changeSet[attr] = mappedNewVal
+      }
+      // }
     }
-    // }
+
+    return { op: 'update', bygonzID, data: changeSet }
   }
-  return [bygonzID, changeSet]
 }
 
 // ------------- //

@@ -38,16 +38,8 @@ export async function _saveBlockRecursively (currentBlock: BlockEntity, blocksDB
     bygonzID = currentBlock.properties.bygonz
   }
   const currentBlockByg = await blocksDB.Blocks.get(bygonzID)
-  const mappedBlockObj: Partial<BlockParams> = { uuid: bygonzID /*, ':db/id': targetBlock.id */ }
-  for (const eachKey of Object.keys(currentBlock)) {
-    const inputVal = currentBlock[eachKey]
-    if (eachKey === 'parent' && typeof inputVal !== 'string') continue
-    const mappedVal = await mapBlockValueToBygonzValue(eachKey, inputVal)
-    if (mappedVal !== undefined) {
-      mappedBlockObj[`${eachKey}`] = mappedVal
-    }
-  }
 
+  const mappedBlockObj = await mapBlockToBlockVM(bygonzID, currentBlock)
   // persist UUID - https://github.com/logseq/logseq/issues/4141
   if (!currentBlock.properties?.id && !currentBlock.properties?.bygonz) {
     DEBUG('Pinning UUID:', currentBlock)
@@ -106,6 +98,19 @@ export async function mapBlockValueToBygonzValue (attribute: string, inputVal: a
   } else {
     return inputVal
   }
+}
+
+export async function mapBlockToBlockVM (bygonzID, block) {
+  const mappedBlockObj: Partial<BlockParams> = { uuid: bygonzID /*, ':db/id': targetBlock.id */ }
+  for (const eachKey of Object.keys(block)) {
+    const inputVal = block[eachKey]
+    if (eachKey === 'parent' && typeof inputVal !== 'string') continue
+    const mappedVal = await mapBlockValueToBygonzValue(eachKey, inputVal)
+    if (mappedVal !== undefined) {
+      mappedBlockObj[`${eachKey}`] = mappedVal
+    }
+  }
+  return mappedBlockObj
 }
 
 export async function initiateLoadFromBlock (block: BlockEntity, blockVMs: BlockVM[]) {
