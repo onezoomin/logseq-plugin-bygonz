@@ -82,7 +82,7 @@ export async function _saveBlockRecursively (
     const leftAsBygonzID = idToBygonzId.get(child.left.id)
     if (!leftAsBygonzID) throw new Error(`Failed to lookup child's left.id ${child.left.id}`)
     child.left = leftAsBygonzID
-    await _saveBlockRecursively(child, blocksDB)
+    await _saveBlockRecursively(child, blocksDB, recursion + 1)
   }
   DEBUG('Unseen (i.e. removed) VM children:', unseenVMChildren)
   for (const childVM of unseenVMChildren) {
