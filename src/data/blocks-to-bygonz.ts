@@ -19,16 +19,20 @@ const matchesBygonzID = (child: BlockEntity, bygonzID: string) =>
 export const saveBlockRecursively = debounce(async (currentBlock: BlockEntity, blocksDB: BlocksDB) => {
   console.groupCollapsed('Initiating save from:', currentBlock)
   try {
-    await _saveBlockRecursively(currentBlock, blocksDB)
+    const currentBlockWithKids = await logseq.Editor
+      .getBlock(currentBlock?.uuid, { includeChildren: true }) as BlockWithChildren
+    await _saveBlockRecursively(currentBlockWithKids, blocksDB)
   } finally { console.groupEnd() }
 }, 1000/* HACK think about this */) as (currentBlock: BlockEntity, blocksDB: BlocksDB) => void // remove the Promise, as debounce won't let us wait for it
 
-export async function _saveBlockRecursively (currentBlock: BlockEntity, blocksDB: BlocksDB) {
-  DEBUG('Saving block recursion:', { currentBlock })
-  const currentBlockWithKids = await logseq.Editor
-    .getBlock(currentBlock?.uuid, { includeChildren: true }) as BlockWithChildren
-  DEBUG({ currentBlockWithKids })
-  const { children } = currentBlockWithKids
+export async function _saveBlockRecursively (
+  currentBlock: BlockWithChildren,
+  blocksDB: BlocksDB,
+  recursion = 0,
+) {
+  DEBUG('Saving block recursion:', recursion, { currentBlock })
+  DEBUG({ currentBlock })
+  const { children } = currentBlock
 
   let bygonzID = currentBlock.uuid
   if (currentBlock.properties?.bygonz) {
@@ -45,6 +49,11 @@ export async function _saveBlockRecursively (currentBlock: BlockEntity, blocksDB
   }
 
   const mappedBlockObj = await mapBlockToBlockVM(bygonzID, currentBlock, true)
+  if (recursion === 0) {
+    if (mappedBlockObj.left === mappedBlockObj.parent) delete mappedBlockObj.left
+    delete mappedBlockObj.parent
+    DEBUG('Deleted parent/left', { mappedBlockObj, currentBlock })
+  }
   const currentBlockByg = await blocksDB.Blocks.get(bygonzID)
   if (!currentBlockByg) {
     await blocksDB.Blocks.add(mappedBlockObj)
