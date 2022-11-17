@@ -172,13 +172,14 @@ function main () {
 
     // DEBUG('Pinning bygonz ID', matchingVM.uuid)
     // await logseq.Editor.upsertBlockProperty(currentBlock.uuid, 'bygonz', matchingVM.uuid)
-    await bygonzLoad({ currentBlock })
+    // await bygonzLoad({ currentBlock })
 
     const targetBlock = await logseq.Editor.insertBlock(
       currentBlock.uuid, '🚀 Fetching ...',
-      { sibling: false, customUUID: matchingVM.uuid })
+      { sibling: true, focus: false, customUUID: matchingVM.uuid })
     if (!targetBlock) throw new Error('Insert result is null')
     await bygonzLoad({ currentBlock: targetBlock })
+    // TODO delete
 
     // /* const blocks: IBatchBlock[] =  */await loadBlockFromIPFS(maybeCid, currentBlock)
     // await logseq.Editor.insertBatchBlock(targetBlock.uuid, blocks, {
