@@ -34,14 +34,16 @@ export async function handleDBChangeEvent (event: ChangeEvent, blocksDB: BlocksD
   try {
     // Find all relevant IDs to check if the change is related to our known blocks
     const ids = (await Promise.all(blocks.map(async b => {
+      if (!b.uuid) return []
       if (!b.parent) return [b.uuid]
       const block = (await logseq.Editor.getBlock((b.parent).id))
       if (!block) return [b.uuid]
       const parentUuid = block.properties?.bygonz ?? block.uuid
       return [b.uuid, parentUuid]
     }))).flat()
+    DEBUG('Matches any known block?', { ids, blocks })
     const matches = await blocksDB.Blocks.where('uuid').anyOf(ids).count()
-    DEBUG('Matches any known block?', matches, { ids, blocks })
+    DEBUG('Matches any known block?', matches)
     if (!matches) return
 
     return await DEBUG.group(`handleChange${txMeta?.outlinerOp ? ` (op=${txMeta?.outlinerOp})` : ''}`, event, async () => {
