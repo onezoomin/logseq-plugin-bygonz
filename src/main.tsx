@@ -170,12 +170,15 @@ function main () {
     if (!currentBlock) throw new Error('Slash command but no current block?!') // HACK: use event->block
     DEBUG('[ /bygonz ] gathered facts', maybeUuid, { matchingVM, currentBlock, blockVMs })
 
-    DEBUG('Pinning bygonz ID', matchingVM.uuid)
-    await logseq.Editor.upsertBlockProperty(currentBlock.uuid, 'bygonz', matchingVM.uuid)
+    // DEBUG('Pinning bygonz ID', matchingVM.uuid)
+    // await logseq.Editor.upsertBlockProperty(currentBlock.uuid, 'bygonz', matchingVM.uuid)
     await bygonzLoad({ currentBlock })
 
-    // const targetBlock = await logseq.Editor.insertBlock(targetBlock.uuid, '🚀 Fetching ...', { before: true })
-    // if (!targetBlock) throw new Error('Insert result is null')
+    const targetBlock = await logseq.Editor.insertBlock(
+      currentBlock.uuid, '🚀 Fetching ...',
+      { sibling: false, customUUID: matchingVM.uuid })
+    if (!targetBlock) throw new Error('Insert result is null')
+    await bygonzLoad({ currentBlock: targetBlock })
 
     // /* const blocks: IBatchBlock[] =  */await loadBlockFromIPFS(maybeCid, currentBlock)
     // await logseq.Editor.insertBatchBlock(targetBlock.uuid, blocks, {

@@ -1,7 +1,7 @@
 import { Logger } from 'logger'
 import { partition, groupBy, mapValues, find } from 'lodash-es'
 import { BlocksDB } from './bygonz'
-import { BlockEntity, IDatom } from '@logseq/libs/dist/LSPlugin'
+import { BlockEntity, IDatom, IEntityID } from '@logseq/libs/dist/LSPlugin'
 import { allPromises, OpLogObj } from 'bygonz'
 import { mapBlockToBlockVM, mapBlockValueToBygonzValue } from './blocks-to-bygonz'
 import { BlockParams, BlockVM } from './LogSeqBlock'
@@ -28,10 +28,23 @@ export async function handleDBChangeEvent (event: ChangeEvent, blocksDB: BlocksD
     txData, // entityID, attribute, value, transaction, op(false=before,true=after)
     txMeta,
   } = event
+  if (!blocks) return DEBUG('Dropping changeEvent without blocks:', event)
   DEBUG(`MUTEX? handleChange${txMeta?.outlinerOp ? ` (op=${txMeta?.outlinerOp})` : ''}`, event)
   const unlockMutex = await handleDBChangeMutex.lock()
   try {
-    return DEBUG.group(`handleChange${txMeta?.outlinerOp ? ` (op=${txMeta?.outlinerOp})` : ''}`, event, async () => {
+    // Find all relevant IDs to check if the change is related to our known blocks
+    const ids = (await Promise.all(blocks.map(async b => {
+      if (!b.parent) return [b.uuid]
+      const block = (await logseq.Editor.getBlock((b.parent).id))
+      if (!block) return [b.uuid]
+      const parentUuid = block.properties?.bygonz ?? block.uuid
+      return [b.uuid, parentUuid]
+    }))).flat()
+    const matches = await blocksDB.Blocks.where('uuid').anyOf(ids).count()
+    DEBUG('Matches any known block?', matches, { ids, blocks })
+    if (!matches) return
+
+    return await DEBUG.group(`handleChange${txMeta?.outlinerOp ? ` (op=${txMeta?.outlinerOp})` : ''}`, event, async () => {
       if (!txData) return
 
       const changeSets: ChangeOp[] = []

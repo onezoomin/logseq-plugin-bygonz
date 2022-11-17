@@ -177,7 +177,7 @@ export async function loadBlocksRecursively (
       /* { properties:  currentBlock.properties { foo: 'bar' } } */ // FIXME: DOESN'T WORK
     )
   }
-  await logseq.Editor.upsertBlockProperty(currentBlock.uuid, 'bygonz', currentVM.uuid)
+  // await logseq.Editor.upsertBlockProperty(currentBlock.uuid, 'bygonz', currentVM.uuid)
 
   // TODO ... oh and also all the other attributes
   // await sleep(1000)
@@ -197,15 +197,15 @@ export async function loadBlocksRecursively (
         continue
       }
       // Create it
-      DEBUG('Creating child:', currentBlock.uuid, childVM.content/*  { sibling: false/* , customUUID: childVM.uuid * /, properties: { id: childVM.uuid } } */)
+      DEBUG('Creating child:', { currentBlock, childVM })
       const newBlock = await logseq.Editor.insertBlock(
         currentBlock.uuid,
         childVM.content,
         // 'parent': we don't need to set it because we're already putting it in the right place
-        { sibling: false, focus: false/* , customUUID: childVM.uuid */, properties: { /* id: childVM.uuid, */ bygonz: childVM.uuid } },
+        { sibling: false, focus: false, customUUID: childVM.uuid /* , properties: { bygonz: childVM.uuid } */ },
       )
-      DEBUG('Insert result:', { newBlock })
       if (!newBlock) { ERROR('empty insert result for', { childVM }); throw new Error('Empty insert result') }
+      DEBUG('Insert result:', { newBlock })
       // await sleep(1000)
 
       // DEBUG('Pinning UUID:', childVM.uuid, 'on', newBlock)
@@ -214,7 +214,7 @@ export async function loadBlocksRecursively (
       // await logseq.Editor.upsertBlockProperty(newBlock.uuid, 'uuid', childVM.uuid)
       // await sleep(2500)
       // DEBUG('get by old 1 ?', await logseq.Editor.getBlock(newBlock.uuid)) /* throw new Error('Empty get afert insert') */
-      // matching = await logseq.Editor.getBlock(childVM.uuid/* , { includeChildren: true } */) as BlockWithChildren
+      // matchingBlock = await logseq.Editor.getBlock(childVM.uuid, { includeChildren: true }) as BlockWithChildren
       // if (!matching) {
       //   ERROR('empty get afert insert', { childVM, newBlock }) /* throw new Error('Empty get afert insert') */
       //   DEBUG('get by old 2 ?', await logseq.Editor.getBlock(newBlock.uuid)) /* throw new Error('Empty get afert insert') */
