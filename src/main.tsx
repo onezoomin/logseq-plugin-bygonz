@@ -114,18 +114,18 @@ async function bygonzLoad ({ currentBlock = null, fromBackground = false, newApp
     // if (rootVMs.length !== 1) { ERROR('Blocks list:', blockVMs); throw new Error(`Failed to determine root block in blocks list (${rootVMs.length} matches)`) }
     for (const root of rootVMs) {
       LOG('Checking if root exists in our LogSeq:', root.uuid)
-      let block = await logseq.Editor.getBlock(root.uuid)
-      if (!block) {
-        const resultUuid = await logseq.DB.datascriptQuery(`
-          [:find (pull ?b [:block/uuid])
-            :where
-            [?b :block/properties ?prop]
-            [(get ?prop :bygonz) ?v]
-            [(= ?v "${root.uuid}")]
-        ]`)
-        DEBUG('QUERY RESULT', resultUuid)
-        block = await logseq.Editor.getBlock(resultUuid[0][0].uuid)
-      }
+      const block = await logseq.Editor.getBlock(root.uuid)
+      // if (!block) {
+      //   const resultUuid = await logseq.DB.datascriptQuery(`
+      //     [:find (pull ?b [:block/uuid])
+      //       :where
+      //       [?b :block/properties ?prop]
+      //       [(get ?prop :bygonz) ?v]
+      //       [(= ?v "${root.uuid}")]
+      //   ]`)
+      //   DEBUG('QUERY RESULT', resultUuid)
+      //   block = await logseq.Editor.getBlock(resultUuid[0][0].uuid)
+      // }
       if (!block) {
         WARN(`didn't find bygonz root block in local LogSeq: ${root.uuid}`)
         continue
