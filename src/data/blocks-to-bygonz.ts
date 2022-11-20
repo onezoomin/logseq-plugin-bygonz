@@ -72,7 +72,7 @@ export async function _saveBlockRecursively (
 
   const unseenVMChildren = await (await blocksDB.Blocks.filter(b => b.parent === bygonzID)).toArray()
   DEBUG('VM children:', unseenVMChildren)
-  const idToBygonzId = new Map([currentBlockWithKids, ...currentBlockWithKids.children]
+  const idToBygonzId = new Map([currentBlock, ...currentBlock.children]
     .map(child => [child.id, child.properties?.bygonz ?? child.uuid]))
   for (const child of children) {
     DEBUG('Recursing into child:', child)
@@ -123,7 +123,7 @@ export async function mapBlockToBlockVM (bygonzID: string, block: BlockEntity, s
   return mappedBlockObj as BlockParams
 }
 
-export async function initiateLoadFromBlock (block: BlockEntity, blockVMs: BlockVM[]) {
+export async function initiateLoadFromBlock (block: Pick<BlockEntity, 'uuid'>, blockVMs: BlockVM[]) {
   console.groupCollapsed('Initiating load from:', block)
   try {
     const t = performance.now()
@@ -173,6 +173,7 @@ export async function loadBlocksRecursively (
   }
 
   // Update self
+  const propsBefore = currentBlock.properties // HACK: updateBlock(..., {properties}) doesn't work :/
   if (currentVM.content !== currentBlock.content) {
     DEBUG(`Updating ${currentBlock.uuid}`, { currentBlock, currentVM, blockVMs })
     if (currentBlock.uuid === currentEditingUuid) {
@@ -186,7 +187,11 @@ export async function loadBlocksRecursively (
       /* { properties:  currentBlock.properties { foo: 'bar' } } */ // FIXME: DOESN'T WORK
     )
   }
-  // await logseq.Editor.upsertBlockProperty(currentBlock.uuid, 'bygonz', currentVM.uuid)
+  if (propsBefore) {
+    for (const [prop, value] of Object.entries(propsBefore)) {
+      await logseq.Editor.upsertBlockProperty(currentBlock.uuid, prop, value)
+    }
+  }
 
   // TODO ... oh and also all the other attributes
   // await sleep(1000)

@@ -61,6 +61,9 @@ async function bygonzSave () {
   await logseq.Editor.exitEditingMode(true)
   // await sleep(500) // HACK otherwise root note content might not update
   if (currentBlock) {
+    DEBUG('Pinning root UUID & bygonz tag:', currentBlock)
+    await logseq.Editor.upsertBlockProperty(currentBlock.uuid, 'id', currentBlock.uuid)
+    await logseq.Editor.upsertBlockProperty(currentBlock.uuid, 'bygonz', currentBlock.uuid) // HACK I think we need both atm
     saveBlockRecursively(currentBlock, blocksDB)
     // logseq.DB.onBlockChanged(currentBlock.uuid,
     //   (block: BlockEntity, txData: IDatom[], txMeta?: { [key: string]: any, outlinerOp: string } | undefined) => {
@@ -96,42 +99,63 @@ async function bygonzLoad ({ currentBlock = null, fromBackground = false, newApp
       return
     }
 
-    if (!currentBlock && !fromBackground) {
-      currentBlock = await logseq.Editor.getCurrentBlock()
-      DEBUG('Initiated from Button - current block?', currentBlock)
-      if (currentBlock) {
-        // user deliberately chose to sync this block - so sync this block. and only this block.
-        await logseq.Editor.exitEditingMode(true)
-        await sleep(500) // HACK otherwise root note content did not update
-        await initiateLoadFromBlock(currentBlock, blockVMs)
-        await sleep(500)
-        return
-      }
-    }
+    // if (!currentBlock && !fromBackground) {
+    //   currentBlock = await logseq.Editor.getCurrentBlock()
+    //   DEBUG('Initiated from Button - current block?', currentBlock)
+    //   if (currentBlock) {
+    //     // user deliberately chose to sync this block - so sync this block. and only this block.
+    //     await logseq.Editor.exitEditingMode(true)
+    //     await sleep(500) // HACK otherwise root note content did not update
+    //     await initiateLoadFromBlock(currentBlock, blockVMs)
+    //     await sleep(500)
+    //     return
+    //   }
+    // }
 
     // Try to find the BlockVM roots in LogSeq tree
-    const rootVMs = blockVMs.filter(b => !b.parent) // in bygonz the root nodes don't have a parent
-    // if (rootVMs.length !== 1) { ERROR('Blocks list:', blockVMs); throw new Error(`Failed to determine root block in blocks list (${rootVMs.length} matches)`) }
-    for (const root of rootVMs) {
-      LOG('Checking if root exists in our LogSeq:', root.uuid)
-      const block = await logseq.Editor.getBlock(root.uuid)
-      // if (!block) {
-      //   const resultUuid = await logseq.DB.datascriptQuery(`
-      //     [:find (pull ?b [:block/uuid])
-      //       :where
-      //       [?b :block/properties ?prop]
-      //       [(get ?prop :bygonz) ?v]
-      //       [(= ?v "${root.uuid}")]
-      //   ]`)
-      //   DEBUG('QUERY RESULT', resultUuid)
-      //   block = await logseq.Editor.getBlock(resultUuid[0][0].uuid)
-      // }
-      if (!block) {
-        WARN(`didn't find bygonz root block in local LogSeq: ${root.uuid}`)
-        continue
-      }
-      await initiateLoadFromBlock(block, blockVMs)
+    // const rootVMs = blockVMs.filter(b => !b.parent) // in bygonz the root nodes don't have a parent
+    // // if (rootVMs.length !== 1) { ERROR('Blocks list:', blockVMs); throw new Error(`Failed to determine root block in blocks list (${rootVMs.length} matches)`) }
+    // for (const root of rootVMs) {
+    //   LOG('Checking if root exists in our LogSeq:', root.uuid)
+    //   const block = await logseq.Editor.getBlock(root.uuid)
+    //   // if (!block) {
+    //   //   const resultUuid = await logseq.DB.datascriptQuery(`
+    //   //     [:find (pull ?b [:block/uuid])
+    //   //       :where
+    //   //       [?b :block/properties ?prop]
+    //   //       [(get ?prop :bygonz) ?v]
+    //   //       [(= ?v "${root.uuid}")]
+    //   //   ]`)
+    //   //   DEBUG('QUERY RESULT', resultUuid)
+    //   //   block = await logseq.Editor.getBlock(resultUuid[0][0].uuid)
+    //   // }
+    //   if (!block) {
+    //     WARN(`didn't find bygonz root block in local LogSeq: ${root.uuid}`)
+    //     continue
+    //   }
+    //   await initiateLoadFromBlock(block, blockVMs)
+    // }
+
+    let rootBlocks: Array<Array<{ uuid: string, properties: Record<string, any> }>>
+    try {
+      rootBlocks = await logseq.DB.datascriptQuery(`
+          [:find (pull ?b [:block/uuid :block/properties])
+            :where
+              [?b :block/properties ?prop]
+              [(get ?prop :bygonz) ?v]
+          ]`)
+    } catch (err) { // logseq error messages are missing a stacktrace, so we have to catch it as early as possible
+      ERROR('Failed to find rootBlocks', err)
+      throw new Error('Failed to find bygonz root blocks')
     }
+    DEBUG('All bygonz roots:', rootBlocks)
+    for (const [root] of rootBlocks) {
+      const blockVM = blockVMs.find(b => b.uuid === root.properties.bygonz)
+      if (!blockVM) { WARN('Did not find Bygonz root in DB:', root); continue }
+      DEBUG('Updating root:', { root, blockVM })
+      await initiateLoadFromBlock(root, blockVMs)
+    }
+
     LOG('SYNC done 🎉')
   } finally { setTimeout(() => { isLoading = false }, 500) } // HACK: workaround or change events sent off by our load
 }
